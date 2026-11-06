@@ -7,6 +7,7 @@ namespace App;
 use App\Database\Backup;
 use App\Database\Connection;
 use App\Database\Migrator;
+use App\Http\LazyCsrf;
 use App\Http\Request;
 use App\Http\Response;
 use App\Http\Router;
@@ -36,14 +37,20 @@ use PDO;
 final class App
 {
     public const NAME = 'svaerma';
-    public const VERSION = '0.7.0';
+    public const VERSION = '0.8.0';
     public const DEFAULT_RADIUS = 150;
     public const DEFAULT_PUBLIC_DELAY = 2; // hours
+    /** Total time for one nearby search incl. all fallbacks (seconds), below typical proxy timeouts. */
+    public const NEARBY_BUDGET = 25;
+    /** Nearby searches per API token and minute. */
+    public const API_NEARBY_PER_MINUTE = 30;
 
     private ?PDO $pdo = null;
     private ?Session $session = null;
     private ?View $view = null;
     private ?Router $router = null;
+    /** Token of the current API request (set in dispatchApi()). */
+    private ?int $apiTokenId = null;
 
     /**
      * @param bool|null $installed whether setup is complete; defaults to "config/config.php exists"
@@ -161,7 +168,7 @@ final class App
         );
     }
 
-    public function http(?int $timeout = null): HttpClient
+    public function http(?int $timeout = null, ?float $deadline = null): HttpClient
     {
         // Fair use: identify the app and give a contact address.
         $ua = sprintf(
@@ -170,13 +177,13 @@ final class App
             (string) $this->config->get('base_url'),
             (string) $this->config->get('contact_email'),
         );
-        return new HttpClient($ua, $timeout ?? (int) $this->config->get('osm.timeout'));
+        return new HttpClient($ua, $timeout ?? (int) $this->config->get('osm.timeout'), $deadline);
     }
 
-    public function overpass(): Overpass
+    public function overpass(?float $deadline = null): Overpass
     {
         return new Overpass(
-            $this->http((int) $this->config->get('osm.overpass_timeout')),
+            $this->http((int) $this->config->get('osm.overpass_timeout'), $deadline),
             new CacheRepository($this->pdo()),
             $this->overpassEndpoints(),
             (int) $this->config->get('osm.cache_ttl'),
@@ -184,14 +191,14 @@ final class App
     }
 
     /** Geoapify is used only when an API key is set in the settings. */
-    public function geoapify(): ?Geoapify
+    public function geoapify(?float $deadline = null): ?Geoapify
     {
         $key = trim((string) $this->settings()->get('geoapify_key', ''));
         if ($key === '') {
             return null;
         }
         return new Geoapify(
-            $this->http(),
+            $this->http(null, $deadline),
             new CacheRepository($this->pdo()),
             (string) $this->config->get('osm.geoapify_url'),
             $key,
@@ -201,13 +208,16 @@ final class App
 
     public function nearbySearch(): NearbySearch
     {
-        $overpass = $this->overpass();
+        // One budget for the whole chain, so Overpass + fallbacks finish before
+        // proxy/FPM timeouts or the iOS shortcut give up.
+        $deadline = microtime(true) + self::NEARBY_BUDGET;
+        $overpass = $this->overpass($deadline);
         $providers = ['overpass' => $overpass->nearby(...)];
-        $geoapify = $this->geoapify();
+        $geoapify = $this->geoapify($deadline);
         if ($geoapify !== null) {
             $providers['geoapify'] = $geoapify->nearby(...);
         }
-        $providers['photon'] = $this->placeSearch()->nearby(...);
+        $providers['photon'] = $this->placeSearch(null, $deadline)->nearby(...);
         return new NearbySearch($providers, fn (string $msg) => $this->log($msg));
     }
 
@@ -249,10 +259,10 @@ final class App
     }
 
     /** @param int|null $cacheTtl 0 effectively bypasses the cache (diagnostics) */
-    public function placeSearch(?int $cacheTtl = null): PlaceSearch
+    public function placeSearch(?int $cacheTtl = null, ?float $deadline = null): PlaceSearch
     {
         return new PlaceSearch(
-            $this->http(),
+            $this->http(null, $deadline),
             new CacheRepository($this->pdo()),
             (string) $this->config->get('osm.search_provider'),
             (string) $this->config->get('osm.photon_url'),
@@ -279,7 +289,16 @@ final class App
     private function dispatch(Request $request): Response
     {
         if (!$this->config->isDev() && !$request->https) {
-            return Response::redirect('https://' . ($request->header('host') ?? '') . $request->path, 301);
+            // The configured host, not the Host header (which the client controls).
+            $host = (string) parse_url((string) $this->config->get('base_url'), PHP_URL_HOST);
+            if ($host === '') {
+                // Before setup there is no base_url yet; accept only a plausible host name.
+                $host = (string) $request->header('host');
+                if (!preg_match('/^[a-z0-9.-]+(:\d+)?$/i', $host)) {
+                    return $this->error($request, 400);
+                }
+            }
+            return Response::redirect('https://' . $host . $request->path, 301);
         }
 
         $match = $this->router()->match($request->method, $request->path);
@@ -305,10 +324,11 @@ final class App
             return $this->dispatchApi($request, $route->handler, $match['params']);
         }
 
+        // Started lazily: requests without a session cookie only get one when a page
+        // actually needs it (a form with a CSRF token, a flash message, a login).
         $session = $this->session();
-        $session->start();
 
-        if ($request->method === 'POST' && !$session->validCsrf($request->input('_csrf'))) {
+        if ($request->method === 'POST' && !$session->validCsrf($request->postValue('_csrf'))) {
             return $this->error($request, 400, null, 'Das Formular ist abgelaufen. Bitte lade die Seite neu und versuche es nochmal.');
         }
 
@@ -338,7 +358,7 @@ final class App
         }
 
         $this->view()->share('app', $this);
-        $this->view()->share('csrf', $session->csrfToken());
+        $this->view()->share('csrf', new LazyCsrf($session));
         $this->view()->share('currentPath', $request->path);
         $this->view()->share('loggedIn', !$route->option('setup') && $this->auth()->check());
         $this->view()->share('publicNav', !$route->option('setup') && $this->publicEnabled());
@@ -362,15 +382,19 @@ final class App
             return Response::json(['error' => 'Datenbank-Migration ausstehend.'], 503);
         }
 
-        // Failed token attempts share the login rate limit.
-        $attempts = new LoginAttemptRepository($this->pdo());
-        if ($this->auth()->isLocked($request->ip)) {
-            return Response::json(['error' => 'Zu viele Fehlversuche, bitte später erneut versuchen.'], 429);
-        }
+        // A valid token always works: failed attempts by others must not lock out the owner.
+        // Failures have their own counter, separate from the login form.
         $header = (string) $request->header('authorization');
         $token = preg_match('/^Bearer\s+(\S+)$/i', trim($header), $m) ? $m[1] : '';
-        if ($token === '' || $this->apiTokens()->verify($token) === null) {
-            $attempts->record($request->ip, time());
+        $this->apiTokenId = $token !== '' ? $this->apiTokens()->verify($token) : null;
+        if ($this->apiTokenId === null) {
+            $now = time();
+            $attempts = new LoginAttemptRepository($this->pdo());
+            $attempts->purgeOlderThan($now - Auth::WINDOW);
+            if ($this->auth()->isLocked($request->ip, $now, LoginAttemptRepository::API)) {
+                return Response::json(['error' => 'Zu viele Fehlversuche, bitte später erneut versuchen.'], 429);
+            }
+            $attempts->record($request->ip, $now, LoginAttemptRepository::API);
             return Response::json(['error' => 'Ungültiger oder fehlender API-Token.'], 401)
                 ->withHeader('WWW-Authenticate', 'Bearer');
         }
@@ -380,9 +404,28 @@ final class App
         return $controller->$method($params);
     }
 
+    public function apiTokenId(): ?int
+    {
+        return $this->apiTokenId;
+    }
+
+    /**
+     * Fixed-window rate limit backed by the cache table.
+     *
+     * @return bool false when the limit for this window is used up
+     */
+    public function rateLimit(string $key, int $max, int $window = 60): bool
+    {
+        $cache = new CacheRepository($this->pdo());
+        $slot = sprintf('ratelimit:%s:%d', $key, intdiv(time(), $window));
+        $count = (int) ($cache->get($slot) ?? 0) + 1;
+        $cache->set($slot, (string) $count, $window);
+        return $count <= $max;
+    }
+
     public function error(Request $request, int $status, ?string $debug = null, ?string $message = null): Response
     {
-        $titles = [400 => 'Ungültige Anfrage', 403 => 'Kein Zugriff', 404 => 'Nicht gefunden', 405 => 'Methode nicht erlaubt', 500 => 'Interner Fehler', 503 => 'Gleich wieder da'];
+        $titles = [400 => 'Ungültige Anfrage', 403 => 'Kein Zugriff', 404 => 'Nicht gefunden', 405 => 'Methode nicht erlaubt', 429 => 'Zu viele Anfragen', 500 => 'Interner Fehler', 503 => 'Gleich wieder da'];
         $title = $titles[$status] ?? 'Fehler';
         if ($request->wantsJson()) {
             return Response::json(['error' => $message ?? $title], $status);
@@ -405,12 +448,13 @@ final class App
     {
         $tiles = parse_url((string) $this->config->get('osm.tile_url'), PHP_URL_HOST) ?: 'tile.openstreetmap.org';
         $csp = "default-src 'self'; "
-            . "script-src 'self' https://cdn.jsdelivr.net; "
-            . "style-src 'self' https://cdn.jsdelivr.net; "
-            . "font-src 'self' https://cdn.jsdelivr.net; "
+            . "script-src 'self'; "
+            . "style-src 'self'; "
+            . "font-src 'self'; "
             . "img-src 'self' data: https://$tiles https://*.$tiles; "
             . "connect-src 'self'; "
             . "manifest-src 'self'; worker-src 'self'; "
+            . "object-src 'none'; frame-src 'none'; "
             . "frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
         $headers = [

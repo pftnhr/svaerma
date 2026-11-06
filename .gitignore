@@ -14,5 +14,4 @@ checkins*.json
 /vendor/
 /.phpunit.cache/
 /.phpunit.result.cache
-/composer.lock
 .DS_Store

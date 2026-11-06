@@ -18,9 +18,13 @@ final class Overpass
     public const MIN_RADIUS = 10;
     public const MAX_RADIUS = 1000;
     private const QUERY_TIMEOUT = 10;
-    /** After a total failure Overpass is skipped for this long (seconds). */
+    /** After repeated total failures Overpass is skipped for this long (seconds). */
     public const COOLDOWN = 300;
     public const COOLDOWN_KEY = 'overpass:cooldown';
+    /** Total failures within COOLDOWN seconds that trigger the cooldown. A single
+     *  failure (e.g. a timeout on a large radius) does not block everyone else. */
+    public const COOLDOWN_AFTER = 3;
+    private const FAILURES_KEY = 'overpass:failures';
 
     /**
      * @param list<array{url: string, label: string, headers?: array<string, string>}> $endpoints
@@ -50,9 +54,15 @@ final class Overpass
             try {
                 $json = $this->fetch(self::query($lat, $lon, $radius));
             } catch (OsmException $e) {
-                $this->cache->set(self::COOLDOWN_KEY, gmdate('H:i') . ' UTC', self::COOLDOWN);
+                $failures = (int) ($this->cache->get(self::FAILURES_KEY) ?? 0) + 1;
+                $this->cache->set(self::FAILURES_KEY, (string) $failures, self::COOLDOWN);
+                if ($failures >= self::COOLDOWN_AFTER) {
+                    $this->cache->set(self::COOLDOWN_KEY, gmdate('H:i') . ' UTC', self::COOLDOWN);
+                    $this->cache->set(self::FAILURES_KEY, '0', 1);
+                }
                 throw $e;
             }
+            $this->cache->set(self::FAILURES_KEY, '0', 1);
             // Only valid, complete answers are cached.
             $this->cache->set($key, $json, $this->ttl);
         }

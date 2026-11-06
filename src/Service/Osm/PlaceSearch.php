@@ -89,7 +89,9 @@ final class PlaceSearch
         foreach (self::parsePhoton($data, onlyPlaces: true) as $place) {
             $distance = Geo::distance($lat, $lon, $place->lat, $place->lon);
             if ($distance <= $radius) {
-                $places[$place->osmType . '/' . $place->osmId] ??= $place->withDistance($distance);
+                // Places without OSM reference cannot be deduplicated by it.
+                $key = $place->osmType !== null && $place->osmId !== null ? $place->osmType . '/' . $place->osmId : 'x' . count($places);
+                $places[$key] ??= $place->withDistance($distance);
             }
         }
         $places = array_values($places);

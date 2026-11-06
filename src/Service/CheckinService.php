@@ -15,6 +15,10 @@ final class CheckinService
 {
     public const MAX_NAME = 200;
     public const MAX_NOTE = 5000;
+    /** Earliest accepted check-in time (Foursquare started in 2009). */
+    public const EARLIEST = '2000-01-01 00:00:00';
+    /** Check-ins may lie at most this far in the future (clock skew, time zones). */
+    public const MAX_FUTURE = '+1 day';
 
     public function __construct(
         private CheckinRepository $checkins,
@@ -34,6 +38,26 @@ final class CheckinService
     {
         $errors = [];
 
+        // API bodies are arbitrary JSON: text fields must be strings (or numbers) and valid UTF-8.
+        $invalid = [];
+        foreach (['place_name', 'osm_type', 'note', 'timezone', 'checked_in_at'] as $field) {
+            $value = $input[$field] ?? null;
+            if ($value !== null && !is_string($value) && !is_int($value) && !is_float($value)) {
+                $errors[] = "Ungültiger Wert für $field.";
+                $invalid[$field] = true;
+                $input[$field] = null;
+            } elseif (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
+                $errors[] = "Ungültige Zeichenkodierung in $field (UTF-8 erwartet).";
+                $invalid[$field] = true;
+                $input[$field] = null;
+            }
+        }
+        foreach (['lat', 'lon', 'osm_id'] as $field) {
+            if (isset($input[$field]) && !is_scalar($input[$field])) {
+                $input[$field] = null;
+            }
+        }
+
         $lat = filter_var($input['lat'] ?? null, FILTER_VALIDATE_FLOAT);
         $lon = filter_var($input['lon'] ?? null, FILTER_VALIDATE_FLOAT);
         if ($lat === false || $lon === false || !Geo::validCoordinates($lat, $lon)) {
@@ -41,7 +65,7 @@ final class CheckinService
         }
 
         $name = trim((string) ($input['place_name'] ?? ''));
-        if ($name === '') {
+        if ($name === '' && !isset($invalid['place_name'])) {
             $errors[] = 'Bitte einen Ortsnamen angeben.';
         } elseif (mb_strlen($name) > self::MAX_NAME) {
             $errors[] = 'Der Ortsname ist zu lang.';
@@ -65,14 +89,21 @@ final class CheckinService
 
         $timezone = self::normalizeTimezone(trim((string) ($input['timezone'] ?? ''))) ?? $this->defaultTimezone;
 
-        $time = $now ?? new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $utcNow = ($now ?? new \DateTimeImmutable('now'))->setTimezone(new \DateTimeZone('UTC'));
+        $time = $utcNow;
         $rawTime = $input['checked_in_at'] ?? null;
         if ($rawTime !== null && $rawTime !== '') {
             try {
-                $time = is_numeric($rawTime)
+                $time = is_int($rawTime) || (is_string($rawTime) && ctype_digit($rawTime))
                     ? (new \DateTimeImmutable('@' . (int) $rawTime))
                     // Strings without offset are read in the check-in's timezone.
                     : new \DateTimeImmutable((string) $rawTime, new \DateTimeZone($timezone));
+                // Bounds keep the stored "Y-m-d H:i:s" strings comparable (4-digit years)
+                // and catch misread input such as "20261029" taken as a unix timestamp.
+                $utc = $time->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+                if ($utc < self::EARLIEST || $utc > $utcNow->modify(self::MAX_FUTURE)->format('Y-m-d H:i:s')) {
+                    $errors[] = 'Der Zeitpunkt liegt außerhalb des erlaubten Bereichs.';
+                }
             } catch (\Exception) {
                 $errors[] = 'Ungültiger Zeitpunkt.';
             }

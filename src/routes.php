@@ -51,6 +51,7 @@ return static function (Router $r): void {
     $r->get('/export.json', [TransferController::class, 'exportJson']);
     $r->get('/export.geojson', [TransferController::class, 'exportGeoJson']);
     $r->post('/settings/tokens/{id:\d+}/revoke', [SettingsController::class, 'revokeToken']);
+    $r->post('/settings/logout-all', [SettingsController::class, 'logoutAll'], ['ignore_migrations' => true]);
 
     $r->get('/admin', [AdminController::class, 'index'], ['ignore_migrations' => true]);
     $r->post('/admin/migrate', [AdminController::class, 'migrate'], ['ignore_migrations' => true]);

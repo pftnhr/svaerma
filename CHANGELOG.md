@@ -7,6 +7,39 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.0] - noch nicht veröffentlicht
+
+Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5minpause) für das ausführliche Review ([#12](https://github.com/tgigold/svaerma/issues/12)).
+
+**Nach dem Update** müssen sich alle Geräte einmal neu anmelden.
+
+### Sicherheit
+- Sessions werden nur noch angelegt, wenn eine Seite sie braucht. PHP räumt `data/sessions` selbst auf, auch wenn der Hoster die Session-GC abgeschaltet hat.
+- CI: Actions auf Commit-SHAs gepinnt, `permissions: contents: read`, `composer.lock` eingecheckt.
+- HTTP-Client: Weiterleitungen nur per HTTPS, höchstens drei, API-Keys gehen nie an einen anderen Host.
+- Zusätzliche Overpass-Endpunkte dürfen nicht auf interne Adressen zeigen.
+- `X-Forwarded-Proto`/`X-Forwarded-For` nur noch von vertrauenswürdigen Proxys (neue Option `trusted_proxies`, Standard: private Netze).
+- HTTPS-Redirect auf die Domain aus `base_url` statt auf den `Host`-Header.
+- CSRF-Token nur noch aus dem POST-Body.
+- Session-Cookie mit `__Host-`-Präfix, Löschen mit denselben Cookie-Attributen.
+- API: Gültige Tokens funktionieren auch während einer Sperre. Fehlversuche bei API und Login zählen getrennt. `places/nearby` ist pro Token begrenzt (30/min).
+- Weitere Härtung (Frontend, Login-Sperre, Sitzungsverwaltung, Setup). Bootstrap, Bootstrap Icons und Leaflet werden jetzt selbst gehostet, die CSP erlaubt keine fremden Skripte mehr.
+
+### Hinzugefügt
+- *Einstellungen → Überall abmelden* beendet alle Sitzungen auf allen Geräten.
+
+### Behoben
+- API: Nicht-Text-Werte (z. B. Arrays) und ungültiges UTF-8 werden abgelehnt. JSON-Antworten scheitern nicht mehr an ungültigem UTF-8 in alten Daten.
+- Zeitpunkte müssen zwischen 2000 und morgen liegen. Achtstellige Zahlen wie `20261029` werden nicht mehr als Unix-Zeit gelesen.
+- Öffentlicher Modus: Die Verzögerung zählt ab dem späteren Zeitpunkt von Check-in und Eintrag, nachgetragene Check-ins sind also nicht sofort sichtbar.
+- Swarm-Import: Einträge ohne ID bekommen eine stabile ID aus ihrem Inhalt statt `#1`, `#2` und kollidieren nicht mehr zwischen Dateien.
+- Photon-Umkreissuche: Orte ohne OSM-Bezug fallen nicht mehr auf einen Treffer zusammen.
+- Ortsliste auf die 100 nächsten Orte begrenzt, die Besuchsabfrage läuft in Blöcken.
+- Bearbeiten ohne Zeitänderung behält die Sekunden.
+- Verlauf: Gruppierung nach Tag folgt der Reihenfolge, auch bei Reisen über Zeitzonen.
+- Overpass-Pause erst nach drei Komplettausfällen in fünf Minuten, ein einzelner Timeout sperrt nicht mehr alle.
+- Gesamt-Zeitbudget von 25 s für die Umkreissuche inklusive aller Fallbacks.
+
 ## [0.7.0] - 2026-10-29
 
 ### Hinzugefügt

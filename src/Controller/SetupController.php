@@ -16,6 +16,10 @@ final class SetupController extends Controller
         $setup = $this->setup();
         $problems = $setup->checkRequirements();
         if ($problems === []) {
+            $problems = $this->exposure($setup, $this->requestOrigin());
+        }
+        // The token must never be created where it could be downloaded.
+        if ($problems === []) {
             $setup->ensureToken();
         }
         return $this->show($problems);
@@ -47,6 +51,10 @@ final class SetupController extends Controller
         if ($errors !== []) {
             return $this->show([], $errors, $input, 422);
         }
+        $exposure = $this->exposure($setup, $input['base_url']);
+        if ($exposure !== []) {
+            return $this->show($exposure, [], $input, 422);
+        }
 
         $setup->run($input);
         $this->app->session()->regenerate();
@@ -72,6 +80,27 @@ final class SetupController extends Controller
             ],
             'minLength' => Setup::MIN_PASSWORD_LENGTH,
         ], $status, 'layout_minimal');
+    }
+
+    /** @return list<string> a blocking problem if data/ is publicly readable */
+    private function exposure(Setup $setup, ?string $origin): array
+    {
+        if ($origin === null || $setup->dataDirExposed($this->app->http(5), $origin) !== true) {
+            return [];
+        }
+        return ['Das Verzeichnis data/ ist öffentlich abrufbar (Datenbank, Sitzungen und Setup-Code wären downloadbar). '
+            . 'Stelle das Document-Root auf public/ oder sorge dafür, dass der Server die .htaccess-Dateien beachtet '
+            . '(AllowOverride All). Bei nginx: Zugriff auf data/, config/ usw. sperren. Danach diese Seite neu laden.'];
+    }
+
+    /** Origin of the current request, if the Host header looks like a plain host name. */
+    private function requestOrigin(): ?string
+    {
+        $host = (string) $this->request->header('host');
+        if (!preg_match('/^[a-z0-9.-]+(:\d+)?$/i', $host)) {
+            return null;
+        }
+        return ($this->request->https ? 'https://' : 'http://') . $host;
     }
 
     private function setup(): Setup

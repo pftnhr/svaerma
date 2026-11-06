@@ -21,4 +21,5 @@ if ($config->isDev()) {
 date_default_timezone_set('UTC');
 
 $app = new App\App($config);
-$app->handle(App\Http\Request::fromGlobals())->send();
+$proxies = $config->get('trusted_proxies', []);
+$app->handle(App\Http\Request::fromGlobals(is_array($proxies) ? array_values(array_map('strval', $proxies)) : []))->send();

@@ -1,5 +1,5 @@
 <?php
-/** @var array<string, list<App\Model\Checkin>> $days */
+/** @var list<non-empty-list<App\Model\Checkin>> $days */
 /** @var int $page */
 /** @var int $pages */
 /** @var int $total */
@@ -20,7 +20,7 @@ $title = 'Verlauf';
     </div>
 <?php endif; ?>
 
-<?php foreach ($days as $date => $checkins): ?>
+<?php foreach ($days as $checkins): ?>
     <h2 class="h6 text-body-secondary mt-4 mb-2"><?= e(Format::day($checkins[0]->localTime())) ?></h2>
     <div class="list-group mb-2">
         <?php foreach ($checkins as $c): ?>

@@ -41,12 +41,15 @@ final class SwarmImporter
             }
             foreach ($items as $i => $item) {
                 $report['total']++;
-                $id = is_array($item) && isset($item['id']) && is_scalar($item['id']) ? (string) $item['id'] : '#' . ($i + 1);
+                $hasId = is_array($item) && isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== '';
                 $mapped = is_array($item) ? $this->map($item) : 'Eintrag ist kein Objekt.';
                 if (is_string($mapped)) {
-                    $report['skipped'][] = ['file' => $file, 'id' => $id, 'reason' => $mapped];
+                    $report['skipped'][] = ['file' => $file, 'id' => $hasId ? (string) $item['id'] : '#' . ($i + 1), 'reason' => $mapped];
                     continue;
                 }
+                // Without a Swarm id, derive a stable one from the content: positions like
+                // "#1" collide across files and would block other entries in later imports.
+                $id = $hasId ? (string) $item['id'] : self::contentId($mapped);
                 $rows[] = ['file' => $file, 'id' => $id, 'data' => $mapped];
             }
         }
@@ -81,6 +84,17 @@ final class SwarmImporter
         }
         $report['imported'] = count($toInsert);
         return $report;
+    }
+
+    /** @param array<string, mixed> $mapped */
+    private static function contentId(array $mapped): string
+    {
+        return 'sha1:' . sha1(implode('|', [
+            (string) $mapped['checked_in_at'],
+            (string) $mapped['place_name'],
+            sprintf('%.6F', (float) $mapped['lat']),
+            sprintf('%.6F', (float) $mapped['lon']),
+        ]));
     }
 
     /** @return list<mixed>|null */

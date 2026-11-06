@@ -8,7 +8,10 @@ use App\Config;
 use App\Database\Backup;
 use App\Database\Connection;
 use App\Database\Migrator;
+use App\Http\Session;
 use App\Repository\SettingsRepository;
+use App\Service\Osm\HttpClient;
+use App\Service\Osm\OsmException;
 
 /**
  * Initial installation, shared by the web setup (/setup) and bin/setup.php:
@@ -80,7 +83,11 @@ final class Setup
         $migrator = new Migrator($pdo, $this->migrationsDir, new Backup($pdo, $this->dataDir . '/backups'));
         $result = $migrator->migrate();
 
-        (new SettingsRepository($pdo))->set('password_hash', password_hash($input['password'], PASSWORD_DEFAULT));
+        $settings = new SettingsRepository($pdo);
+        $settings->set('password_hash', password_hash($input['password'], PASSWORD_DEFAULT));
+        // A reset must also end every existing session: new epoch, stored sessions gone.
+        Auth::rotateEpoch($settings);
+        Session::purgeDirectory($this->dataDir . '/sessions');
 
         // Config is written last: its existence marks setup as complete and locks /setup.
         Config::write([
@@ -92,6 +99,31 @@ final class Setup
 
         $this->deleteToken();
         return $result['applied'];
+    }
+
+    /**
+     * Whether files in data/ can be downloaded over HTTP – the case when the project
+     * lies in the web root and the server ignores .htaccess (AllowOverride None, nginx).
+     * Writes a random probe file and requests it via $baseUrl.
+     *
+     * @return bool|null true = exposed, false = protected, null = could not check
+     */
+    public function dataDirExposed(HttpClient $http, string $baseUrl): ?bool
+    {
+        $name = 'probe-' . bin2hex(random_bytes(8)) . '.txt';
+        $content = bin2hex(random_bytes(16));
+        $path = $this->dataDir . '/' . $name;
+        if (@file_put_contents($path, $content) === false) {
+            return null;
+        }
+        try {
+            $response = $http->fetch(rtrim($baseUrl, '/') . '/data/' . $name);
+            return $response['status'] === 200 && str_contains($response['body'], $content);
+        } catch (OsmException) {
+            return null;
+        } finally {
+            @unlink($path);
+        }
     }
 
     public function tokenPath(): string

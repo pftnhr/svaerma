@@ -66,21 +66,24 @@ final class CheckinRepository
         if ($refs === []) {
             return [];
         }
-        $conditions = [];
-        $params = [];
-        foreach ($refs as [$type, $id]) {
-            $conditions[] = '(osm_type = ? AND osm_id = ?)';
-            $params[] = $type;
-            $params[] = $id;
-        }
-        $stmt = $this->pdo->prepare(
-            'SELECT osm_type, osm_id, MAX(checked_in_at) AS last, COUNT(*) AS cnt FROM checkins
-             WHERE ' . implode(' OR ', $conditions) . ' GROUP BY osm_type, osm_id'
-        );
-        $stmt->execute($params);
         $result = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $result[$row['osm_type'] . '/' . $row['osm_id']] = ['last' => (string) $row['last'], 'count' => (int) $row['cnt']];
+        // Chunks keep each statement well below SQLite's parameter limit.
+        foreach (array_chunk($refs, 200) as $chunk) {
+            $conditions = [];
+            $params = [];
+            foreach ($chunk as [$type, $id]) {
+                $conditions[] = '(osm_type = ? AND osm_id = ?)';
+                $params[] = $type;
+                $params[] = $id;
+            }
+            $stmt = $this->pdo->prepare(
+                'SELECT osm_type, osm_id, MAX(checked_in_at) AS last, COUNT(*) AS cnt FROM checkins
+                 WHERE ' . implode(' OR ', $conditions) . ' GROUP BY osm_type, osm_id'
+            );
+            $stmt->execute($params);
+            foreach ($stmt->fetchAll() as $row) {
+                $result[$row['osm_type'] . '/' . $row['osm_id']] = ['last' => (string) $row['last'], 'count' => (int) $row['cnt']];
+            }
         }
         return $result;
     }
@@ -202,7 +205,10 @@ final class CheckinRepository
     public function isVisible(Checkin $checkin, Visibility $visibility): bool
     {
         $at = $checkin->checkedInAt->format('Y-m-d H:i:s');
-        if ($at > $visibility->cutoff() || (!$visibility->showManual && $checkin->osmType === null)) {
+        $cutoff = $visibility->cutoff();
+        // The delay counts from the later of "happened" and "entered": back-dated
+        // entries do not become public immediately.
+        if ($at > $cutoff || $checkin->createdAt > $cutoff || (!$visibility->showManual && $checkin->osmType === null)) {
             return false;
         }
         if ($visibility->limit === null) {
@@ -220,11 +226,13 @@ final class CheckinRepository
         if ($visibility === null) {
             return ['WHERE 1 = 1', []];
         }
-        $where = 'WHERE checked_in_at <= ?';
+        // Public after the delay, counted from the later of check-in time and entry time.
+        $where = 'WHERE checked_in_at <= ? AND created_at <= ?';
         if (!$visibility->showManual) {
             $where .= ' AND osm_type IS NOT NULL';
         }
-        return [$where, [$visibility->cutoff()]];
+        $cutoff = $visibility->cutoff();
+        return [$where, [$cutoff, $cutoff]];
     }
 
     /**

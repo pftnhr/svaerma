@@ -26,6 +26,9 @@ final class Config
             'timezone' => 'Europe/Berlin',
             'db_path' => APP_ROOT . '/data/app.sqlite',
             'data_dir' => APP_ROOT . '/data',
+            // Reverse proxies (IPs or CIDR ranges) allowed to set X-Forwarded-Proto/-For.
+            // Default: proxies on the same host or in a private network.
+            'trusted_proxies' => \App\Http\IpRange::PRIVATE_NETWORKS,
             'osm' => [
                 'overpass_url' => 'https://overpass-api.de/api/interpreter',
                 // Tried in order when the main endpoint fails (see wiki.openstreetmap.org/wiki/Overpass_API).

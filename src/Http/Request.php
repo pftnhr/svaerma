@@ -25,7 +25,11 @@ final class Request
     ) {
     }
 
-    public static function fromGlobals(): self
+    /**
+     * @param list<string> $trustedProxies IPs/CIDR ranges whose X-Forwarded-Proto and
+     *                                     X-Forwarded-For headers are believed
+     */
+    public static function fromGlobals(array $trustedProxies = []): self
     {
         $headers = [];
         foreach ($_SERVER as $key => $value) {
@@ -43,8 +47,14 @@ final class Request
             $headers['authorization'] = (string) $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
 
-        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || ($headers['x-forwarded-proto'] ?? '') === 'https';
+        $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $ip = $remote;
+        // Forwarded headers can be set by anyone; only a known proxy may set them.
+        if (IpRange::matchesAny($remote, $trustedProxies)) {
+            $https = $https || strtolower($headers['x-forwarded-proto'] ?? '') === 'https';
+            $ip = self::forwardedFor($headers['x-forwarded-for'] ?? '', $trustedProxies) ?? $remote;
+        }
 
         $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
         $path = is_string($path) ? rawurldecode($path) : '/';
@@ -55,11 +65,38 @@ final class Request
             query: $_GET,
             post: $_POST,
             headers: $headers,
-            ip: (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
+            ip: $ip,
             https: $https,
             body: (string) file_get_contents('php://input'),
             files: $_FILES,
         );
+    }
+
+    /**
+     * Client IP from X-Forwarded-For: the rightmost entry that is not a trusted proxy
+     * (entries further left can be forged by the client).
+     *
+     * @param list<string> $trustedProxies
+     */
+    private static function forwardedFor(string $header, array $trustedProxies): ?string
+    {
+        $hops = array_reverse(array_filter(array_map('trim', explode(',', $header))));
+        foreach ($hops as $hop) {
+            if (filter_var($hop, FILTER_VALIDATE_IP) === false) {
+                return null;
+            }
+            if (!IpRange::matchesAny($hop, $trustedProxies)) {
+                return $hop;
+            }
+        }
+        return null;
+    }
+
+    /** Value from the POST body only, e.g. the CSRF token (never from the URL). */
+    public function postValue(string $key): string
+    {
+        $value = $this->post[$key] ?? '';
+        return is_string($value) ? trim($value) : '';
     }
 
     public function input(string $key, string $default = ''): string
