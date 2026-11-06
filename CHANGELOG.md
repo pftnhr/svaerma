@@ -7,7 +7,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
-## [0.8.0] - noch nicht veröffentlicht
+## [0.8.0] - 2026-11-07
 
 Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5minpause) für das ausführliche Review ([#12](https://github.com/tgigold/svaerma/issues/12)).
 
@@ -175,7 +175,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/tgigold/svaerma/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tgigold/svaerma/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tgigold/svaerma/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/tgigold/svaerma/compare/v0.5.0...v0.5.1
