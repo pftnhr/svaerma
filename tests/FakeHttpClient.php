@@ -36,6 +36,19 @@ final class FakeHttpClient extends HttpClient
         return ($this->responder)($url);
     }
 
+    public function fetch(string $url): array
+    {
+        $this->requests[] = ['method' => 'GET', 'url' => $url, 'data' => []];
+        try {
+            return ['status' => 200, 'body' => ($this->responder)($url), 'ip' => '', 'location' => null];
+        } catch (\App\Service\Osm\OsmException $e) {
+            if (preg_match('/HTTP (\d{3})/', $e->getMessage(), $m)) {
+                return ['status' => (int) $m[1], 'body' => '', 'ip' => '', 'location' => null];
+            }
+            throw $e;
+        }
+    }
+
     public function post(string $url, array $form): string
     {
         $this->requests[] = ['method' => 'POST', 'url' => $url, 'data' => $form];

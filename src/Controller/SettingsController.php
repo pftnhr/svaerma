@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\App;
+use App\Http\IpRange;
 use App\Http\Response;
 use App\Service\Osm\Overpass;
 
@@ -92,6 +93,9 @@ final class SettingsController extends Controller
         foreach ($extra as $url) {
             if (!preg_match('#^https://[a-z0-9.-]+(:\d+)?(/[^\s]*)?$#i', $url)) {
                 $errors[] = "Ungültiger Overpass-Endpunkt: $url (erwartet z. B. https://example.org/api/interpreter)";
+            } elseif (!IpRange::hostIsPublic((string) parse_url($url, PHP_URL_HOST))) {
+                // The server must not be pointed at its own network (localhost, LAN, cloud metadata).
+                $errors[] = "Overpass-Endpunkt $url ist nicht erreichbar oder zeigt auf eine interne Adresse.";
             }
         }
 
@@ -150,6 +154,13 @@ final class SettingsController extends Controller
         $this->app->apiTokens()->revoke((int) $params['id']);
         $this->flash('success', 'Token widerrufen.');
         return $this->redirect('/settings#api');
+    }
+
+    /** @param array<string, string> $params */
+    public function logoutAll(array $params): Response
+    {
+        $this->app->auth()->logoutEverywhere();
+        return $this->redirect('/login');
     }
 
     /** Last characters of a secret, enough to recognise it. */

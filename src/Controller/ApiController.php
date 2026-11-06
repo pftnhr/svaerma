@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\App;
 use App\Http\Response;
 use App\Model\Checkin;
 use App\Service\Osm\OsmException;
@@ -82,6 +83,10 @@ final class ApiController extends PlaceController
         $coords = $this->coordinates();
         if ($coords === null) {
             return Response::json(['error' => 'Parameter lat und lon fehlen oder sind ungültig.'], 422);
+        }
+        // Protects the server's standing with Overpass/Nominatim even if a token leaks.
+        if (!$this->app->rateLimit('nearby:' . $this->app->apiTokenId(), App::API_NEARBY_PER_MINUTE)) {
+            return Response::json(['error' => 'Zu viele Anfragen, bitte kurz warten.'], 429)->withHeader('Retry-After', '60');
         }
         $radius = max(Overpass::MIN_RADIUS, min(Overpass::MAX_RADIUS, (int) ($this->request->query['radius'] ?? $this->app->nearbyRadius())));
         try {

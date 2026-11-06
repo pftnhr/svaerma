@@ -18,6 +18,10 @@ return [
     // Default timezone for display and for check-ins without a timezone.
     'timezone' => 'Europe/Berlin',
 
+    // Reverse proxies (IPs or CIDR ranges) whose X-Forwarded-Proto/X-Forwarded-For headers
+    // are trusted. Default: private networks (proxy on the same host or LAN). [] trusts none.
+    // 'trusted_proxies' => ['127.0.0.1', '10.0.0.0/8'],
+
     // OpenStreetMap endpoints – swap for your own instances if you like.
     'osm' => [
         'overpass_url' => 'https://overpass-api.de/api/interpreter',

@@ -29,7 +29,7 @@ Live unter `https://checkin.gigold.me`.
 - Apache mit `mod_rewrite` und `.htaccess` (`AllowOverride All`)
 - HTTPS (die Geolocation im Browser funktioniert nur darüber)
 
-Es gibt keine Laufzeit-Abhängigkeiten. Composer brauchst du nur für die Dev-Tools (PHPUnit, PHPStan), die App selbst läuft ohne `vendor/`. Bootstrap, Bootstrap Icons und Leaflet kommen per CDN (jsDelivr) mit Subresource Integrity.
+Es gibt keine Laufzeit-Abhängigkeiten. Composer brauchst du nur für die Dev-Tools (PHPUnit, PHPStan), die App selbst läuft ohne `vendor/`. Bootstrap, Bootstrap Icons und Leaflet liegen selbst gehostet in `public/assets/vendor/` (mit Subresource Integrity), es werden keine Skripte von fremden Servern geladen.
 
 ## Verzeichnisstruktur
 
@@ -65,7 +65,7 @@ Das Setup erzeugt `config/config.php`, legt die Datenbank an, führt alle Migrat
 
 > Damit nicht irgendwer zwischen Deploy und Setup die Instanz übernimmt, verlangt das Setup den Code aus `data/setup-token.txt`. Den kann nur lesen, wer FTP-Zugang hat.
 
-**Passwort vergessen?** `config/config.php` per FTP löschen und `/setup` erneut durchlaufen. Die bestehende Datenbank bleibt dabei erhalten, nur das Passwort wird neu gesetzt.
+**Passwort vergessen?** `config/config.php` per FTP löschen und `/setup` erneut durchlaufen. Die bestehende Datenbank bleibt dabei erhalten, nur das Passwort wird neu gesetzt. Alle bestehenden Sitzungen auf allen Geräten enden dabei.
 
 ### Mit SSH bzw. lokal
 
@@ -78,6 +78,8 @@ Das Skript fragt dieselben Angaben ab wie das Web-Setup, einen Setup-Code brauch
 ### Fallback: Document Root lässt sich nicht auf `public/` setzen
 
 Lade das ganze Projekt ins Web-Root. Die `.htaccess` im Projektverzeichnis leitet dann jede Anfrage intern nach `public/` um. Zusätzlich sperren `src/`, `config/`, `data/`, `templates/`, `migrations/` und `bin/` jeweils per eigener `.htaccess` (`Require all denied`) jeden direkten Zugriff.
+
+Das Setup prüft, ob `data/` von außen abrufbar ist (z. B. weil der Server `.htaccess` ignoriert, bei `AllowOverride None` oder nginx), und bricht in dem Fall ab, bevor der Setup-Code angelegt wird. Alternativ lässt sich `data_dir` (und `db_path`) in `config/config.php` auf ein Verzeichnis außerhalb des Web-Roots legen.
 
 Wichtig: In die oberste `.htaccess` gehört **kein** `Require all denied`. Apache wendet `.htaccess`-Dateien übergeordneter Verzeichnisse auch auf `public/` an, das würde die App komplett sperren.
 
@@ -156,7 +158,7 @@ Die REST-API unter `/api/v1` ist vor allem für den iOS-Kurzbefehl gedacht.
 Authorization: Bearer svm_…
 ```
 
-Fehlversuche zählen zum selben Rate-Limit wie der Login (5 pro IP und 15 Minuten). Danach antwortet die API mit `429`.
+Falsche Tokens haben ein eigenes Rate-Limit (5 pro IP und 15 Minuten), danach antwortet die API auf weitere falsche Tokens mit `429`. Ein gültiger Token funktioniert immer. Die Ortssuche `places/nearby` ist auf 30 Anfragen pro Token und Minute begrenzt.
 
 ### Endpunkte
 
@@ -280,7 +282,7 @@ Danach startet svaerma ohne Browserleiste (`display: standalone`), mit eigenem I
 - `/sw.js`: Service Worker. PHP liefert ihn aus (`PwaController`, Vorlage `templates/pwa/sw.js`), damit der Cache-Name die App-Version enthält (`svaerma-0.7.0`). Ein Update installiert so einen frischen Cache und löscht den alten.
 - `public/offline.html`: eigenständige Seite ohne externe Abhängigkeiten. Sie erscheint, wenn kein Netz da ist.
 
-**Was gecacht wird und was nicht:** Bewusst minimal. Gecacht wird nur die statische App-Hülle: CSS, JS, Icons, Manifest, Offline-Seite. Seiten mit deinen Daten (Verlauf, Detailseiten, Einstellungen), die API, Ortsabfragen, Kartendaten und Exporte gehen immer ins Netz und landen nie im Cache. Nach dem Abmelden liegt also nichts Persönliches auf dem Gerät. Einchecken ohne Netz ist nicht vorgesehen. CDN-Dateien (Bootstrap, Leaflet) und Kartenkacheln verwaltet der Browser selbst.
+**Was gecacht wird und was nicht:** Bewusst minimal. Gecacht wird nur die statische App-Hülle: CSS, JS, Icons, Manifest, Offline-Seite. Seiten mit deinen Daten (Verlauf, Detailseiten, Einstellungen), die API, Ortsabfragen, Kartendaten und Exporte gehen immer ins Netz und landen nie im Cache. Nach dem Abmelden liegt also nichts Persönliches auf dem Gerät. Einchecken ohne Netz ist nicht vorgesehen. Kartenkacheln verwaltet der Browser selbst.
 
 ## Deployment und Updates
 
@@ -365,11 +367,14 @@ Bestehender Code muss dafür nicht angefasst werden, abgesehen von `routes.php` 
 
 - Alle Datenbankzugriffe laufen über Prepared Statements, und zwar nur in Repositories.
 - In Templates wird jede Ausgabe mit `e()` escaped.
-- Session-Cookies sind `Secure`, `HttpOnly` und `SameSite=Lax`, Sessions liegen in `data/sessions`. Nach dem Login wird die Session-ID neu erzeugt.
-- Jedes Formular ist per CSRF-Token geschützt.
-- Nach 5 Fehlversuchen pro IP bzw. 25 insgesamt ist der Login 15 Minuten gesperrt. Falsche API-Tokens zählen mit.
+- Session-Cookies heißen `__Host-svaerma_sid` und sind `Secure`, `HttpOnly` und `SameSite=Lax`. Sessions liegen in `data/sessions` und werden erst angelegt, wenn eine Seite sie braucht (Login, Formular). Nach dem Login wird die Session-ID neu erzeugt.
+- Jede Session ist an eine Sitzungs-Epoche gebunden. Ein Passwort-Reset über `/setup` und *Einstellungen → Überall abmelden* beenden alle Sitzungen auf allen Geräten.
+- Jedes Formular ist per CSRF-Token geschützt. Das Token wird nur aus dem POST-Body gelesen.
+- Nach 5 Fehlversuchen pro IP bzw. 25 insgesamt ist der Login 15 Minuten gesperrt. Geräte, die sich schon einmal erfolgreich angemeldet haben, sind von der globalen Sperre ausgenommen. Falsche API-Tokens zählen getrennt.
 - API-Tokens werden nur als SHA-256-Hash gespeichert und lassen sich jederzeit widerrufen. API-Anfragen nutzen keine Session und brauchen daher kein CSRF-Token.
-- HTTPS ist Pflicht (Redirect in `.htaccess` und in der App), dazu kommen HSTS, eine strikte Content Security Policy und `X-Frame-Options: DENY`.
+- HTTPS ist Pflicht (Redirect in `.htaccess` und in der App, auf die Domain aus `base_url`), dazu kommen HSTS, eine strikte Content Security Policy (nur eigene Skripte, `object-src 'none'`) und `X-Frame-Options: DENY`.
+- `X-Forwarded-Proto` und `X-Forwarded-For` werden nur von vertrauenswürdigen Proxys übernommen (`trusted_proxies` in `config/config.php`, Standard: private Netze).
+- Ausgehende Anfragen folgen Weiterleitungen nur per HTTPS und schicken API-Keys nie an einen anderen Host. Zusätzliche Overpass-Endpunkte dürfen nicht auf interne Adressen zeigen.
 - `Referrer-Policy: strict-origin-when-cross-origin`: Fremde Server (z. B. OSM-Kacheln, die einen Referer verlangen) sehen nur die Domain, nie den Pfad.
 - In Produktion gibt es keine Fehlerdetails. Fehler landen in `data/logs/error.log`.
 - `config/` und `data/` sind von außen nicht erreichbar, auch im Fallback-Modus.

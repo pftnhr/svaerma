@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var lon = parseFloat(el.dataset.lon);
     var map = L.map(el, { scrollWheelZoom: false }).setView([lat, lon], 17);
     tiles(map, el.dataset.tiles);
-    L.circleMarker([lat, lon], MARKER).addTo(map).bindTooltip(el.dataset.name);
+    // Leaflet inserts string content as HTML; a text node keeps the name plain text.
+    L.circleMarker([lat, lon], MARKER).addTo(map).bindTooltip(document.createTextNode(el.dataset.name || ''));
   });
 
   // All check-ins

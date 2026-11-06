@@ -64,12 +64,23 @@ final class ApiTest extends TestCase
         self::assertSame(401, $this->call('GET', '/api/v1/checkins', $this->token)->status);
     }
 
-    public function testTooManyWrongTokensLockTheIp(): void
+    public function testTooManyWrongTokensLockOnlyFurtherWrongTokens(): void
     {
         for ($i = 0; $i < 5; $i++) {
             $this->call('GET', '/api/v1/checkins', 'svm_wrong');
         }
-        self::assertSame(429, $this->call('GET', '/api/v1/checkins', $this->token)->status, 'Even a valid token is refused while locked');
+        self::assertSame(429, $this->call('GET', '/api/v1/checkins', 'svm_wrong')->status);
+        // Others guessing tokens must not lock out the owner's shortcut.
+        self::assertSame(200, $this->call('GET', '/api/v1/checkins', $this->token)->status);
+    }
+
+    public function testWrongTokensDoNotLockTheLoginForm(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            $this->call('GET', '/api/v1/checkins', 'svm_wrong');
+        }
+        self::assertFalse($this->app->auth()->isLocked('10.0.0.1'));
+        self::assertFalse($this->app->auth()->isLocked('10.9.9.9'));
     }
 
     public function testCreateWithFieldsAndRead(): void

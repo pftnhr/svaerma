@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: jobs only read the repository. Deploy uses FTP secrets, not the token.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -13,15 +17,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
           extensions: pdo_sqlite, intl, mbstring
           coverage: none
 
       - name: Install dev tools
+        # composer.lock is committed, so CI runs the exact same tool versions every time.
         run: composer install --no-interaction --no-progress
 
       - name: Lint
@@ -38,13 +45,16 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       # Uploads only files tracked in git. Runtime files on the server
       # (config/config.php, data/*) are not in the repo and are never touched:
       # the action only deletes files it uploaded itself.
       - name: Deploy via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        # Pinned to a commit: this step receives the production FTP credentials.
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}

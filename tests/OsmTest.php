@@ -200,11 +200,16 @@ final class OsmTest extends TestCase
         $http = new FakeHttpClient(static fn (): string => throw new OsmException('HTTP 502'));
         $overpass = new Overpass($http, new CacheRepository($this->migratedPdo()), self::endpoints('https://a.test/api', 'https://b.test/api'), 60);
 
-        try {
-            $overpass->nearby(52.52, 13.405, 150);
-        } catch (OsmException) {
+        // A single failure (e.g. a timeout on a large radius) does not block others.
+        for ($i = 1; $i <= Overpass::COOLDOWN_AFTER; $i++) {
+            try {
+                $overpass->nearby(52.52, 13.405 + $i / 100, 150);
+            } catch (OsmException $e) {
+                self::assertStringNotContainsString('kurz zuvor nicht erreichbar', $e->getMessage());
+            }
+            self::assertCount(2 * $i, $http->requests);
         }
-        self::assertCount(2, $http->requests);
+        $requests = count($http->requests);
 
         try {
             $overpass->nearby(48.1, 11.5, 150);
@@ -212,14 +217,14 @@ final class OsmTest extends TestCase
         } catch (OsmException $e) {
             self::assertStringContainsString('kurz zuvor nicht erreichbar', $e->getMessage());
         }
-        self::assertCount(2, $http->requests, 'No new requests during the cooldown');
+        self::assertCount($requests, $http->requests, 'No new requests during the cooldown');
 
         // The diagnostics path (fetch) ignores the cooldown.
         try {
             $overpass->fetch('x');
         } catch (OsmException) {
         }
-        self::assertCount(4, $http->requests);
+        self::assertCount($requests + 2, $http->requests);
     }
 
     public function testPhotonReverseFiltersAndSorts(): void

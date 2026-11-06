@@ -7,6 +7,9 @@ namespace App\Http;
 /**
  * Thin wrapper around PHP sessions with hardened cookie settings.
  * Session files live in data/sessions so shared-hosting GC does not wipe them early.
+ *
+ * Sessions start lazily: reading from a request without a session cookie returns
+ * defaults without creating a file, so visitors, bots and 404s leave nothing behind.
  */
 final class Session
 {
@@ -20,6 +23,18 @@ final class Session
     ) {
     }
 
+    /** "__Host-" makes the browser enforce Secure, Path=/ and no Domain (HTTPS only). */
+    public function cookieName(): string
+    {
+        return $this->secure ? '__Host-svaerma_sid' : 'svaerma_sid';
+    }
+
+    /** Whether the request carries a session cookie (i.e. there may be data to read). */
+    public function exists(): bool
+    {
+        return $this->started || isset($_COOKIE[$this->cookieName()]);
+    }
+
     public function start(): void
     {
         if ($this->started || PHP_SAPI === 'cli') {
@@ -30,23 +45,24 @@ final class Session
             mkdir($this->savePath, 0700, true);
         }
         session_save_path($this->savePath);
-        session_name('checkin_sid');
+        session_name($this->cookieName());
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
         ini_set('session.gc_maxlifetime', (string) self::LIFETIME);
-        session_set_cookie_params([
-            'lifetime' => self::LIFETIME,
-            'path' => '/',
-            'secure' => $this->secure,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        // Some distributions disable GC (probability 0) and rely on a cron job that
+        // only knows the default path – clean up data/sessions ourselves.
+        ini_set('session.gc_probability', '1');
+        ini_set('session.gc_divisor', '100');
+        session_set_cookie_params($this->cookieParams(self::LIFETIME));
         session_start();
         $this->started = true;
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
+        if (!$this->exists()) {
+            return $default;
+        }
         $this->start();
         return $_SESSION[$key] ?? $default;
     }
@@ -59,6 +75,9 @@ final class Session
 
     public function remove(string $key): void
     {
+        if (!$this->exists()) {
+            return;
+        }
         $this->start();
         unset($_SESSION[$key]);
     }
@@ -73,13 +92,51 @@ final class Session
 
     public function destroy(): void
     {
+        if (!$this->exists()) {
+            return;
+        }
         $this->start();
         $_SESSION = [];
         if (PHP_SAPI !== 'cli') {
-            setcookie(session_name() ?: 'checkin_sid', '', ['expires' => time() - 3600, 'path' => '/']);
+            $params = $this->cookieParams(0);
+            unset($params['lifetime']);
+            setcookie($this->cookieName(), '', ['expires' => time() - 3600] + $params);
             session_destroy();
         }
         $this->started = false;
+    }
+
+    /**
+     * Deletes every stored session (all devices are logged out), e.g. after a password reset.
+     *
+     * @return int number of removed session files
+     */
+    public static function purgeDirectory(string $savePath): int
+    {
+        $removed = 0;
+        foreach (glob(rtrim($savePath, '/') . '/sess_*') ?: [] as $file) {
+            if (@unlink($file)) {
+                $removed++;
+            }
+        }
+        return $removed;
+    }
+
+    /** Logs out every device: the current session and all stored ones. */
+    public function purgeAll(): int
+    {
+        return self::purgeDirectory($this->savePath);
+    }
+
+    /** Sets an extra cookie with the same hardening as the session cookie. */
+    public function setCookie(string $name, string $value, int $lifetime): void
+    {
+        if (PHP_SAPI === 'cli' || headers_sent()) {
+            return;
+        }
+        $params = $this->cookieParams($lifetime);
+        unset($params['lifetime']);
+        setcookie($name, $value, ['expires' => time() + $lifetime] + $params);
     }
 
     public function flash(string $type, string $message): void
@@ -93,7 +150,9 @@ final class Session
     public function takeFlash(): array
     {
         $messages = $this->get('_flash', []);
-        $this->remove('_flash');
+        if ($messages !== []) {
+            $this->remove('_flash');
+        }
         return $messages;
     }
 
@@ -111,5 +170,17 @@ final class Session
     {
         $expected = $this->get('_csrf');
         return is_string($expected) && $token !== '' && hash_equals($expected, $token);
+    }
+
+    /** @return array{lifetime: int, path: string, secure: bool, httponly: bool, samesite: string} */
+    private function cookieParams(int $lifetime): array
+    {
+        return [
+            'lifetime' => $lifetime,
+            'path' => '/',
+            'secure' => $this->secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
     }
 }

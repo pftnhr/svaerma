@@ -266,4 +266,16 @@ $kb = static fn (int $bytes): string => number_format($bytes / 1024, 0, ',', '.'
             </div>
         </div>
     </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h6 card-title">Sitzungen</h3>
+                <p class="small text-body-secondary">Meldet alle Geräte ab, auch dieses. API-Tokens bleiben gültig, die widerrufst du oben einzeln.</p>
+                <form method="post" action="/settings/logout-all" data-confirm="Wirklich alle Geräte abmelden?">
+                    <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+                    <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-box-arrow-right"></i> Überall abmelden</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

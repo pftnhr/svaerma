@@ -14,6 +14,8 @@ final class NearbySearch
 {
     /** Places closer than this with the same name count as duplicates (metres). */
     private const SAME_PLACE_DISTANCE = 40;
+    /** Only the nearest places are returned; city centres can yield thousands. */
+    public const MAX_PLACES = 100;
 
     /**
      * @param array<string, \Closure(float, float, int): list<Place>> $providers primary first
@@ -43,7 +45,7 @@ final class NearbySearch
                 continue;
             }
             if ($name === $primary) {
-                return ['source' => $name, 'places' => $results[$name], 'notice' => null];
+                return ['source' => $name, 'places' => array_slice($results[$name], 0, self::MAX_PLACES), 'notice' => null];
             }
         }
         if ($results === []) {
@@ -53,7 +55,7 @@ final class NearbySearch
         $sources = array_map('ucfirst', array_keys($results));
         return [
             'source' => implode('+', array_keys($results)),
-            'places' => self::merge(...array_values($results)),
+            'places' => array_slice(self::merge(...array_values($results)), 0, self::MAX_PLACES),
             'notice' => ucfirst((string) $primary) . ' ist nicht erreichbar, die Liste kommt von '
                 . implode(' und ', $sources) . ' und ist evtl. unvollständig.',
         ];

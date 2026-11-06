@@ -46,10 +46,18 @@ final class CheckinController extends Controller
             return $this->redirect('/checkins?page=' . $pages);
         }
 
-        // Group by the local calendar day of each check-in.
+        // Group consecutive check-ins by their local calendar day. The list is sorted by
+        // UTC, so after travelling across time zones a day may appear twice – that is
+        // better than moving entries out of order into an earlier group.
         $days = [];
+        $current = null;
         foreach ($repo->page(self::PER_PAGE, ($page - 1) * self::PER_PAGE, $visibility) as $checkin) {
-            $days[$checkin->localTime()->format('Y-m-d')][] = $checkin;
+            $day = $checkin->localTime()->format('Y-m-d');
+            if ($day !== $current) {
+                $days[] = [];
+                $current = $day;
+            }
+            $days[array_key_last($days)][] = $checkin;
         }
 
         return $this->render('checkin/index', [
@@ -123,7 +131,12 @@ final class CheckinController extends Controller
             'checked_in_at' => $this->request->input('checked_in_at'),
             'timezone' => $this->request->input('timezone'),
         ];
-        $result = $this->app->checkinService()->update($checkin, $input);
+        $data = $input;
+        // The form only has minute precision: an unchanged time keeps its seconds.
+        if ($input['timezone'] === $checkin->timezone && $input['checked_in_at'] === $checkin->localTime()->format('Y-m-d\TH:i')) {
+            $data['checked_in_at'] = $checkin->checkedInAt->format('Y-m-d\TH:i:s\Z');
+        }
+        $result = $this->app->checkinService()->update($checkin, $data);
         if (!$result instanceof Checkin) {
             return $this->render('checkin/edit', [
                 'checkin' => $checkin,

@@ -12,13 +12,15 @@ use App\Service\CheckinService;
 final class VisibilityTest extends TestCase
 {
     private CheckinRepository $repo;
+    private \PDO $pdo;
     /** @var array<string, Checkin> */
     private array $c = [];
     private \DateTimeImmutable $now;
 
     protected function setUp(): void
     {
-        $this->repo = new CheckinRepository($this->migratedPdo());
+        $this->pdo = $this->migratedPdo();
+        $this->repo = new CheckinRepository($this->pdo);
         $service = new CheckinService($this->repo, 'Europe/Berlin');
         $this->now = new \DateTimeImmutable('2026-10-29 12:00:00', new \DateTimeZone('UTC'));
         $rows = [
@@ -33,8 +35,21 @@ final class VisibilityTest extends TestCase
                 'osm_type' => $type ?? '', 'osm_id' => $type !== null ? 1 : '',
             ], 'web');
             self::assertInstanceOf(Checkin::class, $checkin);
-            $this->c[$name] = $checkin;
+            // Entered when it happened (the delay also counts from the entry time).
+            $this->pdo->prepare('UPDATE checkins SET created_at = checked_in_at WHERE id = ?')->execute([$checkin->id]);
+            $this->c[$name] = $this->repo->find($checkin->id) ?? throw new \RuntimeException('missing');
         }
+    }
+
+    public function testBackdatedEntriesWaitForTheDelayToo(): void
+    {
+        // Entered 30 min ago, but dated two days back: not public before the delay is over.
+        $this->pdo->prepare('UPDATE checkins SET created_at = ? WHERE id = ?')->execute(['2026-10-29 11:30:00', $this->c['old']->id]);
+        $old = $this->repo->find($this->c['old']->id) ?? throw new \RuntimeException('missing');
+
+        self::assertFalse($this->repo->isVisible($old, $this->vis()));
+        self::assertSame(['yesterday', 'manual'], $this->names($this->repo->page(50, 0, $this->vis())));
+        self::assertTrue($this->repo->isVisible($old, $this->vis(delay: 0)));
     }
 
     private function vis(?int $limit = null, int $delay = 2, bool $manual = true): Visibility

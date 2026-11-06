@@ -21,7 +21,8 @@ final class Response
 
     public static function json(mixed $data, int $status = 200, bool $pretty = true): self
     {
-        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | ($pretty ? JSON_PRETTY_PRINT : 0);
+        // Invalid UTF-8 in stored data must not turn every JSON response into a 500.
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR | ($pretty ? JSON_PRETTY_PRINT : 0);
         $body = json_encode($data, $flags);
         return new self($body, $status, ['Content-Type' => 'application/json; charset=utf-8']);
     }
