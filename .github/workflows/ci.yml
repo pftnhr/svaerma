@@ -40,8 +40,35 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 
+  e2e:
+    # Browser tests for public/assets/js against PHP's built-in server (see playwright.config.js).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.5'
+          extensions: pdo_sqlite, intl, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Playwright
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run e2e
+
   deploy:
-    needs: test
+    needs: [test, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -69,6 +96,12 @@ jobs:
             vendor/**
             composer.json
             composer.lock
+            package.json
+            package-lock.json
+            playwright.config.js
+            node_modules/**
+            e2e/**
+            test-results/**
             phpunit.xml
             phpstan.neon
             config/config.php

@@ -48,6 +48,7 @@ data/          SQLite-DB, Backups, Sessions, Logs (gitignored, per .htaccess ges
 migrations/    nummerierte Migrationen 001_….php
 bin/           CLI-Skripte (setup, migrate, import-swarm) für die lokale Nutzung
 tests/         PHPUnit
+e2e/           Browser-Tests (Playwright) für public/assets/js
 ```
 
 ## Installation
@@ -288,8 +289,8 @@ Danach startet svaerma ohne Browserleiste (`display: standalone`), mit eigenem I
 
 Die Datei `.github/workflows/ci.yml` macht zwei Dinge:
 
-- Bei jedem Push und PR laufen Lint, PHPUnit und PHPStan mit PHP 8.5.
-- Bei einem Push auf `main` lädt die Action nach grünen Tests per **FTPS** (Port 21) in das FTP-Startverzeichnis hoch.
+- Bei jedem Push und PR laufen Lint, PHPUnit und PHPStan mit PHP 8.5, dazu die Browser-Tests (Playwright, Chromium).
+- Bei einem Push auf `main` lädt die Action nach grünen Tests (beide Jobs) per **FTPS** (Port 21) in das FTP-Startverzeichnis hoch.
 
 Dafür müssen diese Repository-Secrets gesetzt sein: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`.
 
@@ -348,6 +349,18 @@ vendor/bin/phpunit
 ```bash
 vendor/bin/phpstan analyse
 ```
+
+**Browser-Tests** für das JavaScript (Einchecken, Suche, Karte, Löschen-Dialog, Service Worker, CSP). Sie brauchen Node 22 und legen bei jedem Lauf eine Wegwerf-Installation in `e2e/.run/` an, deine `config/config.php` bleibt unberührt. OSM-Dienste werden dabei nie angefragt, die Tests beantworten die Ortsabfragen selbst.
+
+```bash
+npm ci && npx playwright install chromium
+```
+
+```bash
+npm run e2e
+```
+
+Node ist nur ein Dev-Werkzeug, die App selbst läuft weiterhin ohne. Der Pfad zur Config lässt sich über die Umgebungsvariable `APP_CONFIG` umbiegen, das nutzen die Tests.
 
 ## Ein neues Feature hinzufügen
 

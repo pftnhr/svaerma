@@ -50,9 +50,14 @@ final class Config
         ];
     }
 
+    /**
+     * config/config.php, or the file named in the APP_CONFIG environment variable
+     * (set by the server admin, e.g. for the end-to-end tests' throwaway install).
+     */
     public static function path(): string
     {
-        return APP_ROOT . '/config/config.php';
+        $env = getenv('APP_CONFIG');
+        return is_string($env) && $env !== '' ? $env : APP_ROOT . '/config/config.php';
     }
 
     public static function exists(): bool

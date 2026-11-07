@@ -7,6 +7,10 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Browser-Tests** mit Playwright (`e2e/`, `npm run e2e`) für das JavaScript: Einchecken mit Standort, Umkreis erweitern, Suche, Fehlermeldungen, eigener Ort, verweigerter Standort, Tooltip-Escaping, Karte, Löschen-Dialog, Service Worker offline, Token-Feld. Jeder Test prüft zusätzlich, dass keine CSP-Verstöße auftreten. Läuft in der CI als eigener Job, der Deploy wartet darauf.
+- Umgebungsvariable `APP_CONFIG` für einen abweichenden Pfad zur Config (genutzt von den Browser-Tests).
+
 ## [0.8.0] - 2026-11-07
 
 Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5minpause) für das ausführliche Review ([#12](https://github.com/tgigold/svaerma/issues/12)).

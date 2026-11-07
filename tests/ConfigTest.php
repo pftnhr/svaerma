@@ -25,4 +25,15 @@ final class ConfigTest extends TestCase
     {
         self::assertSame('fallback', Config::fromArray([])->get('osm.nope.deeper', 'fallback'));
     }
+
+    public function testConfigPathCanBeOverriddenByEnvironment(): void
+    {
+        putenv('APP_CONFIG=/tmp/elsewhere/config.php');
+        try {
+            self::assertSame('/tmp/elsewhere/config.php', \App\Config::path());
+        } finally {
+            putenv('APP_CONFIG');
+        }
+        self::assertStringEndsWith('/config/config.php', \App\Config::path());
+    }
 }
