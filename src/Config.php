@@ -26,6 +26,8 @@ final class Config
             'timezone' => 'Europe/Berlin',
             'db_path' => APP_ROOT . '/data/app.sqlite',
             'data_dir' => APP_ROOT . '/data',
+            // Look for a newer release on GitHub (at most once a day, shown in the settings).
+            'update_check' => true,
             // Reverse proxies (IPs or CIDR ranges) allowed to set X-Forwarded-Proto/-For.
             // Default: proxies on the same host or in a private network.
             'trusted_proxies' => \App\Http\IpRange::PRIVATE_NETWORKS,

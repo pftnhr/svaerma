@@ -35,6 +35,7 @@ $values = [
     'timezone' => 'Europe/Berlin',
     'data_dir' => "$dir/data",
     'db_path' => "$dir/data/app.sqlite",
+    'update_check' => false, // tests never contact GitHub
 ];
 Config::write($values, "$dir/config.php");
 
