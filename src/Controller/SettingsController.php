@@ -44,6 +44,7 @@ final class SettingsController extends Controller
             'uploadLimit' => (string) ini_get('upload_max_filesize'),
             'importReady' => in_array('004_venue_ref', $migrator->applied(), true),
             'version' => App::VERSION,
+            'update' => $this->app->updateCheck()?->newerRelease(),
             'applied' => $migrator->applied(),
             'pending' => $migrator->pending(),
             'backups' => array_map(

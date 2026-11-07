@@ -18,6 +18,9 @@ return [
     // Default timezone for display and for check-ins without a timezone.
     'timezone' => 'Europe/Berlin',
 
+    // Daily check for a newer release on GitHub, shown under Settings → System.
+    // 'update_check' => false,
+
     // Reverse proxies (IPs or CIDR ranges) whose X-Forwarded-Proto/X-Forwarded-For headers
     // are trusted. Default: private networks (proxy on the same host or LAN). [] trusts none.
     // 'trusted_proxies' => ['127.0.0.1', '10.0.0.0/8'],

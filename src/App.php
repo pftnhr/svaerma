@@ -22,6 +22,7 @@ use App\Service\Auth;
 use App\Service\CheckinService;
 use App\Service\Exporter;
 use App\Service\SwarmImporter;
+use App\Service\UpdateCheck;
 use App\Service\Osm\Geoapify;
 use App\Service\Osm\HttpClient;
 use App\Service\Osm\NearbySearch;
@@ -37,7 +38,9 @@ use PDO;
 final class App
 {
     public const NAME = 'svaerma';
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.8.1';
+    /** GitHub repository: footer link and update check. */
+    public const REPOSITORY = 'tgigold/svaerma';
     public const DEFAULT_RADIUS = 150;
     public const DEFAULT_PUBLIC_DELAY = 2; // hours
     /** Total time for one nearby search incl. all fallbacks (seconds), below typical proxy timeouts. */
@@ -141,6 +144,15 @@ final class App
     public function exporter(): Exporter
     {
         return new Exporter($this->checkins(), rtrim((string) $this->config->get('base_url'), '/'));
+    }
+
+    /** Null when the check is switched off in config.php ('update_check' => false). */
+    public function updateCheck(): ?UpdateCheck
+    {
+        if ($this->config->get('update_check', true) !== true) {
+            return null;
+        }
+        return new UpdateCheck($this->http(5), new CacheRepository($this->pdo()), self::REPOSITORY, self::VERSION);
     }
 
     /** Search radius for nearby places in metres (user setting). */

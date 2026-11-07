@@ -94,6 +94,9 @@ Wichtig: In die oberste `.htaccess` gehört **kein** `Require all denied`. Apach
 | `base_url` | Öffentliche Adresse ohne `/` am Ende |
 | `contact_email` | Kontakt im User-Agent für Overpass, Photon und Nominatim |
 | `timezone` | Standard-Zeitzone für die Anzeige |
+| `trusted_proxies` | IPs/CIDR-Bereiche von Reverse-Proxys, deren `X-Forwarded-Proto`/`-For` gelten (Standard: private Netze) |
+| `update_check` | Täglich nach einem neueren Release auf GitHub schauen, Hinweis unter *Einstellungen → System* (Standard: `true`) |
+| `data_dir`, `db_path` | Verzeichnis für Daten und Pfad der Datenbank, z. B. außerhalb des Web-Roots |
 | `osm.overpass_ch_url` | overpass.ch-Endpunkt. Wird als Erstes genutzt, wenn in den Einstellungen ein API-Key gesetzt ist |
 | `osm.overpass_url` | Overpass-Endpunkt für Orte in der Nähe |
 | `osm.overpass_timeout` | Timeout pro Overpass-Endpunkt in Sekunden (Standard: 12), danach greift der Fallback |

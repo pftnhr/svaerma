@@ -7,9 +7,15 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-07
+
 ### Hinzugefügt
+- **Update-Hinweis** unter *Einstellungen → System*: Die App fragt höchstens einmal am Tag bei GitHub nach dem neuesten Release und zeigt eine neuere Version mit Link zu den Release Notes. Ist GitHub nicht erreichbar, erscheint einfach nichts. Abschaltbar mit `'update_check' => false` in `config/config.php`.
 - **Browser-Tests** mit Playwright (`e2e/`, `npm run e2e`) für das JavaScript: Einchecken mit Standort, Umkreis erweitern, Suche, Fehlermeldungen, eigener Ort, verweigerter Standort, Tooltip-Escaping, Karte, Löschen-Dialog, Service Worker offline, Token-Feld. Jeder Test prüft zusätzlich, dass keine CSP-Verstöße auftreten. Läuft in der CI als eigener Job, der Deploy wartet darauf.
 - Umgebungsvariable `APP_CONFIG` für einen abweichenden Pfad zur Config (genutzt von den Browser-Tests).
+
+### Geändert
+- Footer neu sortiert: Kartendaten und Quellen links, rechts „by svaerma“ mit Link zum Repository.
 
 ## [0.8.0] - 2026-11-07
 
@@ -179,7 +185,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/tgigold/svaerma/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/tgigold/svaerma/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tgigold/svaerma/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tgigold/svaerma/compare/v0.5.1...v0.6.0

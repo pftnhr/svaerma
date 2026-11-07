@@ -15,6 +15,7 @@
 /** @var string $phpVersion */
 /** @var string $sqliteVersion */
 /** @var string $csrf */
+/** @var array{version: string, url: string}|null $update */
 /** @var list<array{id: int, name: string, created_at: string, last_used_at: ?string, revoked_at: ?string}>|null $tokens */
 /** @var string|null $newToken */
 /** @var string $baseUrl */
@@ -225,6 +226,12 @@ $kb = static fn (int $bytes): string => number_format($bytes / 1024, 0, ',', '.'
                 <h3 class="h6 card-title">Status</h3>
                 <dl class="row small mb-0">
                     <dt class="col-6">Version</dt><dd class="col-6"><?= e(App\App::NAME) ?> <?= e($version) ?></dd>
+                    <?php if ($update !== null): ?>
+                        <dd class="col-12 mb-2">
+                            <span class="badge text-bg-success"><i class="bi bi-arrow-up-circle"></i> Neue Version <?= e($update['version']) ?></span>
+                            <a class="ms-1" href="<?= e($update['url']) ?>" rel="noopener" target="_blank">Release Notes</a>
+                        </dd>
+                    <?php endif; ?>
                     <dt class="col-6">PHP</dt><dd class="col-6"><?= e($phpVersion) ?></dd>
                     <dt class="col-6">SQLite</dt><dd class="col-6"><?= e($sqliteVersion) ?></dd>
                     <dt class="col-6">Datenbank</dt><dd class="col-6"><?= e($kb($dbSize)) ?></dd>
