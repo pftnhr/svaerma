@@ -61,8 +61,7 @@ final class ApiController extends PlaceController
                 $place = json_decode($place, true);
             }
             if (!is_array($place) || $place === []) {
-                $error = 'Feld place ist leer oder kein Ort aus /api/v1/places/nearby.';
-                return Response::json(['error' => $error, 'errors' => [$error]], 422);
+                return $this->invalid(['Feld place ist leer oder kein Ort aus /api/v1/places/nearby.']);
             }
             $input += [
                 'lat' => $place['lat'] ?? null,
@@ -76,9 +75,60 @@ final class ApiController extends PlaceController
 
         $result = $this->app->checkinService()->create($input, 'api');
         if (!$result instanceof Checkin) {
-            return Response::json(['error' => implode(' ', $result), 'errors' => $result], 422);
+            return $this->invalid($result);
         }
         return Response::json($this->checkinJson($result), 201)->withHeader('Location', $this->url('/api/v1/checkins/' . $result->id));
+    }
+
+    /**
+     * 422 that also says what arrived, so a Shortcuts notification shows why a field is missing.
+     *
+     * @param list<string> $errors
+     */
+    private function invalid(array $errors): Response
+    {
+        $received = $this->receivedSummary();
+        return Response::json([
+            'error' => implode(' ', $errors) . ' Empfangen: ' . $received,
+            'errors' => $errors,
+            'received' => $received,
+        ], 422);
+    }
+
+    /** Field names and types of the request body, never their values. */
+    private function receivedSummary(): string
+    {
+        $json = $this->request->json();
+        if ($json === null) {
+            if ($this->request->post !== []) {
+                return 'Formular mit ' . implode(', ', array_map('strval', array_keys($this->request->post)));
+            }
+            $length = strlen($this->request->body);
+            return $length === 0
+                ? 'leerer Body'
+                : sprintf('kein gültiges JSON-Objekt (%d Bytes, Content-Type: %s)', $length, $this->request->header('content-type') ?? 'keiner');
+        }
+        if ($json === []) {
+            return 'leeres JSON-Objekt';
+        }
+        $parts = [];
+        foreach ($json as $key => $value) {
+            $parts[] = $key . ' (' . self::describe($value) . ')';
+        }
+        return implode(', ', $parts);
+    }
+
+    private static function describe(mixed $value): string
+    {
+        return match (true) {
+            $value === null => 'leer',
+            is_bool($value) => 'Wahrheitswert',
+            is_int($value), is_float($value) => 'Zahl',
+            $value === [] => 'leeres Objekt',
+            is_array($value) => array_is_list($value) ? sprintf('Liste, %d Einträge', count($value)) : 'Objekt mit ' . implode(', ', array_map('strval', array_keys($value))),
+            is_array(json_decode((string) $value, true)) => sprintf('Text mit JSON, %d Zeichen', mb_strlen((string) $value)),
+            default => sprintf('Text, %d Zeichen', mb_strlen((string) $value)),
+        };
     }
 
     /**

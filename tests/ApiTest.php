@@ -137,6 +137,20 @@ final class ApiTest extends TestCase
         }
     }
 
+    public function testValidationErrorSaysWhatArrived(): void
+    {
+        $data = $this->json($this->call('POST', '/api/v1/checkins', $this->token, [], '{"note": "Hallo", "lat": 51.4, "place": {}}'));
+        self::assertStringContainsString('note (Text, 5 Zeichen)', $data['received']);
+        self::assertStringContainsString('lat (Zahl)', $data['received']);
+        self::assertStringContainsString('place (leeres Objekt)', $data['received']);
+        self::assertStringContainsString('Empfangen: ', $data['error']);
+        self::assertStringNotContainsString('Hallo', $data['error'], 'Only names and types, never values');
+
+        $data = $this->json($this->call('POST', '/api/v1/checkins', $this->token, [], 'kein json'));
+        self::assertStringContainsString('kein gültiges JSON-Objekt (9 Bytes', $data['received']);
+        self::assertSame('leerer Body', $this->json($this->call('POST', '/api/v1/checkins', $this->token))['received']);
+    }
+
     public function testValidationErrorsAre422(): void
     {
         $response = $this->call('POST', '/api/v1/checkins', $this->token, [], '{"lat": 999}');
