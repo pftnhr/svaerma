@@ -7,6 +7,15 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-07
+
+### Behoben
+- **iOS-Kurzbefehl:** Der Check-in wurde nicht gespeichert, die Mitteilung zeigte „Eingecheckt:“ ohne Namen. Grund: In Kurzbefehle lässt sich in ein Feld vom Typ *Wörterbuch* keine Variable einsetzen, `place` kam als leeres Wörterbuch an. `POST /api/v1/checkins` nimmt `place` jetzt auch als JSON-Text an (Feldtyp *Text* mit der Wörterbuch-Variable). Die Anleitung in der README ist entsprechend korrigiert.
+
+### Geändert
+- Ein leeres oder unlesbares `place` liefert jetzt `422` mit einer klaren Meldung statt des allgemeinen „Bitte einen Ortsnamen angeben.“
+- README: Der Beispiel-Kurzbefehl zeigt API-Fehler als Mitteilung an, statt stillschweigend „Eingecheckt:“ zu melden.
+
 ## [0.8.1] - 2026-11-07
 
 ### Hinzugefügt
@@ -185,7 +194,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/tgigold/svaerma/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/tgigold/svaerma/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/tgigold/svaerma/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tgigold/svaerma/compare/v0.6.0...v0.7.0

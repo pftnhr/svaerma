@@ -46,15 +46,24 @@ final class ApiController extends PlaceController
 
     /**
      * Body (JSON or form): lat, lon, place_name, osm_type, osm_id, note, timezone, checked_in_at.
-     * Alternatively "place": one object from /api/v1/places/nearby, plus "note".
+     * Alternatively "place": one object from /api/v1/places/nearby (as object or as its JSON text), plus "note".
      *
      * @param array<string, string> $params
      */
     public function createCheckin(array $params): Response
     {
         $input = $this->request->json() ?? $this->request->post;
-        if (isset($input['place']) && is_array($input['place'])) {
+        if (array_key_exists('place', $input)) {
             $place = $input['place'];
+            // Shortcuts cannot put a variable into a field of type Dictionary, only into Text.
+            // A dictionary variable in a Text field arrives as its JSON text, so decode it.
+            if (is_string($place)) {
+                $place = json_decode($place, true);
+            }
+            if (!is_array($place) || $place === []) {
+                $error = 'Feld place ist leer oder kein Ort aus /api/v1/places/nearby.';
+                return Response::json(['error' => $error, 'errors' => [$error]], 422);
+            }
             $input += [
                 'lat' => $place['lat'] ?? null,
                 'lon' => $place['lon'] ?? null,

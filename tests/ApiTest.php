@@ -117,6 +117,26 @@ final class ApiTest extends TestCase
         self::assertNull($created['note']);
     }
 
+    public function testCreateFromPlaceAsJsonText(): void
+    {
+        // A dictionary variable in a Shortcuts Text field arrives as JSON text.
+        $place = (string) json_encode(['name' => 'Späti Eck', 'lat' => 52.52, 'lon' => 13.405, 'osm_type' => 'node', 'osm_id' => 1003]);
+        $response = $this->call('POST', '/api/v1/checkins', $this->token, [], (string) json_encode(['place' => $place, 'note' => 'Mate']));
+        self::assertSame(201, $response->status);
+        self::assertSame('Späti Eck', $this->json($response)['place_name']);
+        self::assertSame('Mate', $this->json($response)['note']);
+    }
+
+    public function testEmptyOrBrokenPlaceIsNamedInTheError(): void
+    {
+        // An empty dictionary is what Shortcuts sends when the Dictionary field was never filled.
+        foreach (['{"place": {}}', '{"place": ""}', '{"place": "Späti Eck"}', '{"place": 42}'] as $body) {
+            $response = $this->call('POST', '/api/v1/checkins', $this->token, [], $body);
+            self::assertSame(422, $response->status, $body);
+            self::assertStringContainsString('place', $this->json($response)['error'], $body);
+        }
+    }
+
     public function testValidationErrorsAre422(): void
     {
         $response = $this->call('POST', '/api/v1/checkins', $this->token, [], '{"lat": 999}');
