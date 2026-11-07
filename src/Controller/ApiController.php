@@ -176,7 +176,7 @@ final class ApiController extends PlaceController
     }
 
     /** @param array<string, mixed> $place */
-    private static function label(array $place): string
+    public static function label(array $place): string
     {
         $parts = [(string) $place['name']];
         if (!empty($place['category'])) {
@@ -185,7 +185,9 @@ final class ApiController extends PlaceController
         if (isset($place['distance'])) {
             $parts[] = $place['distance'] . ' m';
         }
-        return implode(' · ', $parts);
+        // The label is a key in "choices", and Shortcuts' "Get Dictionary Value" reads a "." in a
+        // key as a key path ("St. Marien" → "Marien" inside "St"). U+2024 looks the same but is no dot.
+        return str_replace('.', "\u{2024}", implode(' · ', $parts));
     }
 
     /** @return array<string, mixed> */

@@ -164,6 +164,14 @@ final class ApiTest extends TestCase
         self::assertSame(400, $this->app->handle(new Request('POST', '/checkin', [], ['lat' => '1'], [], '10.0.0.2', true))->status);
     }
 
+    public function testChoiceLabelsHaveNoDots(): void
+    {
+        // Shortcuts reads a "." in a dictionary key as a key path, so labels must not contain one.
+        $label = \App\Controller\ApiController::label(['name' => 'St. Marien', 'category' => 'Kirche', 'distance' => 80]);
+        self::assertStringNotContainsString('.', $label);
+        self::assertSame("St\u{2024} Marien · Kirche · 80 m", $label);
+    }
+
     public function testNearbyNeedsCoordinates(): void
     {
         self::assertSame(422, $this->call('GET', '/api/v1/places/nearby', $this->token)->status);

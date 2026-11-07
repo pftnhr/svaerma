@@ -7,6 +7,17 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-11-07
+
+### Hinzugefügt
+- **Fertiger iOS-Kurzbefehl** unter `shortcuts/Einchecken.unsigned.shortcut`. Einmal auf dem Mac mit `shortcuts sign` signieren, beim Import fragt er nach Token und Server-Adresse. Funktioniert damit für jede svaerma-Installation. Fehler der API zeigt er als Mitteilung an.
+
+### Geändert
+- README: Die Anleitung zum Kurzbefehl beschreibt jetzt den Import der fertigen Datei. Der Nachbau von Hand ist als Tabelle mit expliziter Verdrahtung jeder Aktion dokumentiert, dazu die bekannten Stolperfallen.
+
+### Behoben
+- Orte mit Punkt im Namen (z. B. „St. Marien“) ließen sich im Kurzbefehl nicht auswählen, weil Kurzbefehle einen Punkt im Wörterbuch-Schlüssel als Pfad liest. Die Labels in `choices` ersetzen Punkte jetzt durch das gleich aussehende „․“ (U+2024). Der gespeicherte Ortsname bleibt unverändert.
+
 ## [0.8.3] - 2026-11-07
 
 ### Hinzugefügt
@@ -199,7 +210,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/tgigold/svaerma/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/tgigold/svaerma/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/tgigold/svaerma/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/tgigold/svaerma/compare/v0.8.0...v0.8.1
