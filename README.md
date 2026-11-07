@@ -224,8 +224,13 @@ In der Kurzbefehle-App einen neuen Kurzbefehl anlegen und diese Aktionen in dies
 9. **Inhalte von URL abrufen**
    - URL: `https://checkin.gigold.me/api/v1/checkins`, Methode: `POST`
    - Header: `Authorization` = `Bearer ` *Token*
-   - Anfragetext: **JSON** mit zwei Feldern: `place` (Typ *Wörterbuch*) = *Wörterbuchwert* aus Schritt 7, `note` (Typ *Text*) = *Eingabe*
-10. **Wörterbuchwert abrufen**: *Wert* für `place_name` in *Inhalte von URL*, danach **Mitteilung anzeigen**: „Eingecheckt: …“
+   - Anfragetext: **JSON** mit zwei Feldern, **beide vom Typ *Text***: `place` = *Wörterbuchwert* aus Schritt 7, `note` = *Eingabe*. Kurzbefehle wandelt das Wörterbuch dabei in JSON-Text um, die API liest ihn wieder aus.
+   - Achtung: Nicht den Typ *Wörterbuch* für `place` wählen. Dort lässt sich keine Variable einsetzen, es käme ein leeres Wörterbuch an.
+10. **Wörterbuchwert abrufen**: *Wert* für `error` in *Inhalte von URL* (aus Schritt 9), dann **Wenn** *Wörterbuchwert* *hat beliebigen Wert*
+    - dann: **Mitteilung anzeigen**: „Fehler: *Wörterbuchwert*“
+    - sonst: **Wörterbuchwert abrufen**: *Wert* für `place_name` in *Inhalte von URL*, danach **Mitteilung anzeigen**: „Eingecheckt: …“
+
+Die API antwortet bei Fehlern mit Status `4xx` und einem Feld `error`. Kurzbefehle bricht dabei nicht ab, deshalb die Abfrage in Schritt 10. Ohne sie läuft der Kurzbefehl scheinbar erfolgreich durch und meldet „Eingecheckt:“ ohne Namen.
 
 Tipp: Über *Zum Home-Bildschirm* oder die Aktionstaste bist du mit einem Tipp dabei. Liefert Schritt 3 einen Fehler, steht der Grund im Feld `error` (z. B. `401` = Token falsch oder widerrufen).
 
