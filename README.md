@@ -207,32 +207,50 @@ curl -H "Authorization: Bearer $TOKEN" "https://checkin.gigold.me/api/v1/places/
 curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"lat":51.4,"lon":12.1,"place_name":"Test"}' https://checkin.gigold.me/api/v1/checkins
 ```
 
-### Beispiel: iOS-Kurzbefehl „Einchecken“
+### iOS-Kurzbefehl „Einchecken“
 
-In der Kurzbefehle-App einen neuen Kurzbefehl anlegen und diese Aktionen in dieser Reihenfolge hinzufügen:
+Ein fertiger Kurzbefehl liegt unter [`shortcuts/Einchecken.unsigned.shortcut`](shortcuts/Einchecken.unsigned.shortcut). Er fragt nach Orten in der Nähe, lässt dich einen auswählen, fragt nach einer Notiz und checkt ein. Fehler der API zeigt er als Mitteilung an.
 
-1. **Text**: deinen Token einfügen (`svm_…`). Die Variable z. B. in *Token* umbenennen.
-2. **Aktuellen Standort abrufen**
-3. **Inhalte von URL abrufen**
-   - URL: `https://checkin.gigold.me/api/v1/places/nearby?lat=` *Breitengrad* `&lon=` *Längengrad*. Die Variablen über *Aktueller Standort → Breitengrad/Längengrad* einfügen.
-   - Methode: `GET`. Header: `Authorization` = `Bearer ` *Token*
-4. **Wörterbuchwert abrufen**: *Wert* für Schlüssel `choices` in *Inhalte von URL*
-5. **Wörterbuchwert abrufen**: *Alle Schlüssel* in *Wörterbuchwert* (aus Schritt 4)
-6. **Aus Liste auswählen**: *Schlüssel*, Eingabeaufforderung „Wo bist du?“
-7. **Wörterbuchwert abrufen**: *Wert* für Schlüssel *Ausgewähltes Objekt* in *Wörterbuchwert* (aus Schritt 4). Das ist der gewählte Ort.
-8. **Nach Eingabe fragen**: „Notiz?“ (Text, optional leer lassen)
-9. **Inhalte von URL abrufen**
-   - URL: `https://checkin.gigold.me/api/v1/checkins`, Methode: `POST`
-   - Header: `Authorization` = `Bearer ` *Token*
-   - Anfragetext: **JSON** mit zwei Feldern, **beide vom Typ *Text***: `place` = *Wörterbuchwert* aus Schritt 7, `note` = *Eingabe*. Kurzbefehle wandelt das Wörterbuch dabei in JSON-Text um, die API liest ihn wieder aus.
-   - Achtung: Nicht den Typ *Wörterbuch* für `place` wählen. Dort lässt sich keine Variable einsetzen, es käme ein leeres Wörterbuch an.
-10. **Wörterbuchwert abrufen**: *Wert* für `error` in *Inhalte von URL* (aus Schritt 9), dann **Wenn** *Wörterbuchwert* *hat beliebigen Wert*
-    - dann: **Mitteilung anzeigen**: „Fehler: *Wörterbuchwert*“
-    - sonst: **Wörterbuchwert abrufen**: *Wert* für `place_name` in *Inhalte von URL*, danach **Mitteilung anzeigen**: „Eingecheckt: …“
+**Import** (einmalig auf einem Mac, denn nur dort lässt sich ein Kurzbefehl signieren):
 
-Die API antwortet bei Fehlern mit Status `4xx` und einem Feld `error`. Kurzbefehle bricht dabei nicht ab, deshalb die Abfrage in Schritt 10. Ohne sie läuft der Kurzbefehl scheinbar erfolgreich durch und meldet „Eingecheckt:“ ohne Namen.
+1. In svaerma unter *Einstellungen → API* einen Token anlegen.
+2. Die Datei herunterladen und im Terminal signieren:
 
-Tipp: Über *Zum Home-Bildschirm* oder die Aktionstaste bist du mit einem Tipp dabei. Liefert Schritt 3 einen Fehler, steht der Grund im Feld `error` (z. B. `401` = Token falsch oder widerrufen).
+   ```bash
+   shortcuts sign --mode anyone --input Einchecken.unsigned.shortcut --output Einchecken.shortcut
+   ```
+
+3. `Einchecken.shortcut` öffnen (Doppelklick oder `open Einchecken.shortcut`). Kurzbefehle fragt beim Import nach dem **Token** und nach der **Adresse deiner Installation**, z. B. `https://checkin.example.com`, ohne `/` am Ende.
+4. Über iCloud ist der Kurzbefehl danach auch auf dem iPhone. Tipp: Über *Zum Home-Bildschirm* oder die Aktionstaste bist du mit einem Tipp dabei.
+
+#### Selbst bauen
+
+Wer den Kurzbefehl von Hand nachbaut: Kurzbefehle reicht Ergebnisse nicht zuverlässig von selbst an die nächste Aktion weiter, vor allem nicht nach *Aus Liste wählen* oder in *Wenn*-Blöcken. Ein **blass dargestelltes Feld** (z. B. *Wörterbuch*) hat keine feste Quelle. Jedes dieser Felder deshalb ausdrücklich belegen: Feld antippen → *Variable auswählen* → die Quellaktion antippen. Mehrere Aktionen heißen „Wörterbuchwert“. Am besten jede über *Umbenennen* eindeutig benennen, so wie in der Tabelle.
+
+| Nr. | Aktion | Einstellungen | Name |
+|---|---|---|---|
+| 1 | **Text** | dein Token (`svm_…`) | Token |
+| 2 | **Text** | Adresse deiner Installation, z. B. `https://checkin.example.com` | Server |
+| 3 | **Aktuellen Standort abrufen** | | |
+| 4 | **Inhalte von URL abrufen** | URL: *Server* `/api/v1/places/nearby?lat=` *Breitengrad* `&lon=` *Längengrad* (über *Aktueller Standort → Breitengrad/Längengrad*). Methode `GET`, Header `Authorization` = `Bearer ` *Token* | GETAntwort |
+| 5 | **Wörterbuchwert abrufen** | *Wert* für `error` in *GETAntwort* | GETFehler |
+| 6 | **Wenn** | *GETFehler* *hat einen beliebigen Wert*: darin **Mitteilung** „Fehler: *GETFehler*“ und **Kurzbefehl stoppen** | |
+| 7 | **Wörterbuchwert abrufen** | *Wert* für `choices` in *GETAntwort* | Ortsauswahl |
+| 8 | **Wörterbuchwert abrufen** | *Alle Schlüssel* in *Ortsauswahl* | Ortslabels |
+| 9 | **Aus Liste wählen** | Liste: *Ortslabels*, Frage „Wo bist du?“ | |
+| 10 | **Wörterbuchwert abrufen** | *Wert* für *Ausgewähltes Objekt* in *Ortsauswahl* | GewählterOrt |
+| 11 | **Nach Eingabe fragen** | Text, „Notiz?“ (darf leer bleiben) | |
+| 12 | **Inhalte von URL abrufen** | URL: *Server* `/api/v1/checkins`, Methode `POST`, Header `Authorization` = `Bearer ` *Token*. Anfragetext **JSON** mit zwei Feldern, **beide vom Typ Text**: `place` = *GewählterOrt*, `note` = *Eingabe* | POSTAntwort |
+| 13 | **Wörterbuchwert abrufen** | *Wert* für `error` in *POSTAntwort* | POSTFehler |
+| 14 | **Wenn** | *POSTFehler* *hat einen beliebigen Wert*: **Mitteilung** „Fehler: *POSTFehler*“. **Sonst**: **Wörterbuchwert abrufen** *Wert* für `place_name` in *POSTAntwort*, dann **Mitteilung** „Eingecheckt: …“ | |
+
+Stolperfallen:
+
+- `place` muss vom Typ **Text** sein. In ein Feld vom Typ *Wörterbuch* lässt sich keine Variable einsetzen, es käme ein leeres Wörterbuch an. Kurzbefehle wandelt das Wörterbuch in JSON-Text um, die API liest ihn wieder aus.
+- `place` und `note` gehören in den **Anfragetext**, nicht zu den Headern.
+- Kurzbefehle bricht bei einem Fehler der API nicht ab. Ohne die *Wenn*-Abfragen läuft er scheinbar erfolgreich durch und meldet „Eingecheckt:“ ohne Namen.
+- Bei einer Antwort `422` steht im Fehlertext auch, was angekommen ist, z. B. „Empfangen: leerer Body“ oder „Empfangen: note (Text, 5 Zeichen)“. Damit lässt sich ein falsch verdrahteter Kurzbefehl schnell finden. `401` heißt: Token falsch oder widerrufen.
+- In den Labels der Auswahlliste ersetzt die API Punkte durch das gleich aussehende Zeichen „․“ (U+2024). Kurzbefehle liest einen Punkt in einem Wörterbuch-Schlüssel sonst als Pfad und fände Orte wie „St. Marien“ nicht. Der gespeicherte Ortsname behält seinen Punkt.
 
 ## Swarm-Import und Export
 

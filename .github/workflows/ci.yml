@@ -101,6 +101,7 @@ jobs:
             playwright.config.js
             node_modules/**
             e2e/**
+            shortcuts/**
             test-results/**
             phpunit.xml
             phpstan.neon
