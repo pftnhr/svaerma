@@ -15,3 +15,9 @@ checkins*.json
 /.phpunit.cache/
 /.phpunit.result.cache
 .DS_Store
+
+# End-to-end tests (Node dev tooling)
+/node_modules/
+/e2e/.run/
+/test-results/
+/playwright-report/
