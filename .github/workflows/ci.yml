@@ -1,11 +1,11 @@
-name: CI & Deploy
+name: CI
 
+# Runs on every pull request. After a merge, deploy.yml calls it again on the merged state (H-9).
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
 
-# Least privilege: jobs only read the repository. Deploy uses FTP secrets, not the token.
+# Least privilege: jobs only read the repository.
 permissions:
   contents: read
 
@@ -67,47 +67,3 @@ jobs:
       - name: End-to-end tests
         run: npm run e2e
 
-  deploy:
-    needs: [test, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          persist-credentials: false
-
-      # Uploads only files tracked in git. Runtime files on the server
-      # (config/config.php, data/*) are not in the repo and are never touched:
-      # the action only deletes files it uploaded itself.
-      - name: Deploy via FTPS
-        # Pinned to a commit: this step receives the production FTP credentials.
-        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .github/**
-            tests/**
-            vendor/**
-            composer.json
-            composer.lock
-            package.json
-            package-lock.json
-            playwright.config.js
-            node_modules/**
-            e2e/**
-            shortcuts/**
-            test-results/**
-            phpunit.xml
-            phpstan.neon
-            config/config.php
-            data/*.sqlite
-            data/backups/**
-            data/sessions/**
-            data/logs/**
-            data/imports/**

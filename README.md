@@ -55,18 +55,18 @@ e2e/           Browser-Tests (Playwright) für public/assets/js
 
 Die Domain muss auf `public/` zeigen, alles andere liegt eine Ebene darüber.
 
-### Ohne SSH (der Normalfall hier)
+### Im Browser
 
-1. Code deployen, entweder über die GitHub Action (siehe [Deployment](#deployment-und-updates)) oder per FTP hochladen.
+1. Code deployen, über die GitHub Action (siehe [Deployment](#deployment-und-updates)).
 2. `https://checkin.gigold.me/setup` aufrufen. Die App legt dabei einen Einmal-Code in `data/setup-token.txt` an.
-3. Die Datei per FTP öffnen und den Code ins Formular übernehmen.
+3. Die Datei per SFTP öffnen und den Code ins Formular übernehmen.
 4. Passwort, Kontakt-Mail, Adresse und Zeitzone eintragen und auf **Einrichten** klicken.
 
 Das Setup erzeugt `config/config.php`, legt die Datenbank an, führt alle Migrationen aus und speichert den Passwort-Hash. Sobald `config/config.php` existiert, antwortet `/setup` mit 404.
 
-> Damit nicht irgendwer zwischen Deploy und Setup die Instanz übernimmt, verlangt das Setup den Code aus `data/setup-token.txt`. Den kann nur lesen, wer FTP-Zugang hat.
+> Damit nicht irgendwer zwischen Deploy und Setup die Instanz übernimmt, verlangt das Setup den Code aus `data/setup-token.txt`. Den kann nur lesen, wer Zugang zum Server hat (SFTP oder SSH).
 
-**Passwort vergessen?** `config/config.php` per FTP löschen und `/setup` erneut durchlaufen. Die bestehende Datenbank bleibt dabei erhalten, nur das Passwort wird neu gesetzt. Alle bestehenden Sitzungen auf allen Geräten enden dabei.
+**Passwort vergessen?** `config/config.php` per SFTP löschen und `/setup` erneut durchlaufen. Die bestehende Datenbank bleibt dabei erhalten, nur das Passwort wird neu gesetzt. Alle bestehenden Sitzungen auf allen Geräten enden dabei.
 
 ### Mit SSH bzw. lokal
 
@@ -137,6 +137,7 @@ Gespeichert werden bei OSM-Orten die Koordinaten des Orts, bei eigenen Orten dei
 | `/checkin/123/edit` | Name, Notiz, Zeitpunkt und Zeitzone bearbeiten |
 | `/map` | Karte mit allen Check-ins |
 | `/settings` | Einstellungen, Migrationen, Backups, OSM-Diagnose (`/admin` leitet hierhin um) |
+| `/health` | Health-Check für das Deployment: antwortet ohne Login mit `200` und `ok`, auch bei ausstehenden Migrationen |
 
 Maßgeblich ist immer die **ID**, der Slug dahinter ist nur Kosmetik. Fehlt er, ist er veraltet (z. B. nach einer Umbenennung) oder falsch, leitet die App per **301** auf die korrekte URL um. Links bleiben damit dauerhaft gültig.
 
@@ -313,14 +314,22 @@ Danach startet svaerma ohne Browserleiste (`display: standalone`), mit eigenem I
 
 ## Deployment und Updates
 
-Die Datei `.github/workflows/ci.yml` macht zwei Dinge:
+Zwei Workflows unter `.github/workflows/`:
 
-- Bei jedem Push und PR laufen Lint, PHPUnit und PHPStan mit PHP 8.5, dazu die Browser-Tests (Playwright, Chromium).
-- Bei einem Push auf `main` lädt die Action nach grünen Tests (beide Jobs) per **FTPS** (Port 21) in das FTP-Startverzeichnis hoch.
+- `ci.yml` läuft bei jedem Pull Request: Lint, PHPUnit und PHPStan mit PHP 8.5, dazu die Browser-Tests (Playwright, Chromium).
+- `deploy.yml` läuft bei jedem Push auf `main`. Er ruft zuerst `ci.yml` auf dem gemergten Stand auf und überträgt nur bei grünen Tests per **rsync über SSH**. Danach ruft er den Health-Check auf; antwortet der nicht mit `200`, schlägt der Workflow fehl. Es läuft immer nur ein Deployment gleichzeitig.
 
-Dafür müssen diese Repository-Secrets gesetzt sein: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`.
+| | |
+|---|---|
+| Server | `gigold.kasserver.com` (All-Inkl), Benutzer `ssh-gigold` |
+| Zielpfad | `/www/htdocs/gigold/checkin_gigold_me` |
+| Health-Check | `https://checkin.gigold.me/health` |
+| Zugriff | Thomas (KAS, SSH/SFTP); GitHub Actions über einen eigenen Deploy-Schlüssel nur für dieses Projekt |
+| Rollback | Revert-Pull-Request auf `main`, der wie jede Änderung durch CI und Deploy geht. Für die Datenbank gibt es das Backup, das vor jeder Migration entsteht. |
 
-Hochgeladen werden nur Dateien aus dem Repo, Tests und Dev-Konfiguration bleiben draußen. `config/config.php` und alles in `data/` sind gitignored. Die Action löscht nur Dateien, die sie selbst hochgeladen hat, deshalb bleiben Datenbank, Config und Backups auf dem Server unangetastet. Ihren Sync-Stand merkt sich die Action in `.ftp-deploy-sync-state.json` auf dem Server.
+Die Zugangsdaten liegen im GitHub-Environment `production`: die Secrets `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `SSH_KNOWN_HOSTS` und `DEPLOY_PATH` sowie die Variable `HEALTH_URL`. Der Host-Key des Servers ist hinterlegt, der Workflow verbindet sich nur mit eingeschalteter Host-Prüfung.
+
+Übertragen wird der Repo-Stand ohne Tests und Dev-Konfiguration. rsync löscht auf dem Server alles, was nicht im Repo ist, **außer** den Pfaden in `deploy/rsync-exclude.txt`. Dort stehen `config/config.php` und `data/` (Datenbank, Backups, Sessions, Logs); die bleiben unangetastet. Wer neue Dateien einführt, die nur auf dem Server leben, muss sie dort eintragen.
 
 **Ablauf eines Updates:**
 
@@ -353,8 +362,8 @@ return static function (PDO $pdo): void {
 
 - Automatische Backups entstehen vor jeder Migration, manuelle über **Backup erstellen** in den Einstellungen.
 - Die Dateien heißen `data/backups/app-YYYYMMDD-HHMMSS-<anlass>.sqlite`, die letzten 20 bleiben erhalten.
-- Herunterladen per FTP. Jede Backup-Datei ist eine vollständige SQLite-Datenbank (erzeugt mit `VACUUM INTO`).
-- Wiederherstellen: Backup per FTP als `data/app.sqlite` hochladen und die bestehende Datei überschreiben.
+- Herunterladen per SFTP. Jede Backup-Datei ist eine vollständige SQLite-Datenbank (erzeugt mit `VACUUM INTO`).
+- Wiederherstellen: Backup per SFTP als `data/app.sqlite` hochladen und die bestehende Datei überschreiben.
 
 ## Lokale Entwicklung
 

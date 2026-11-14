@@ -1,0 +1,35 @@
+# Ausschlussliste für das Deployment per rsync (Regel H-13).
+# Pfade mit führendem / gelten ab Projektwurzel.
+# Was hier ausgeschlossen ist, wird weder hochgeladen noch auf dem Server gelöscht.
+# "+ " vor einem Muster nimmt es wieder auf; die Reihenfolge zählt (erste passende Regel gewinnt).
+
+# Gehört nicht auf den Server
+/.git/
+/.github/
+/.gitignore
+/deploy/
+/tests/
+/e2e/
+/shortcuts/
+/vendor/
+/node_modules/
+/test-results/
+/playwright-report/
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/playwright.config.js
+/phpunit.xml
+/phpstan.neon
+/phpstan-baseline.neon
+/.phpunit.cache/
+/.phpunit.result.cache
+/CLAUDE.md
+.DS_Store
+
+# Lebt nur auf dem Server und bleibt unangetastet.
+# data/.htaccess kommt aus dem Repo und wird mit ausgeliefert, alles andere in data/ nicht.
+/config/config.php
++ /data/.htaccess
+/data/*

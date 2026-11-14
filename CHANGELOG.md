@@ -7,8 +7,17 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Health-Check** unter `/health`: antwortet ohne Login mit `200` und `ok`, auch während Migrationen ausstehen. Der Deploy-Workflow prüft damit, ob die App nach dem Übertragen läuft.
+
 ### Geändert
+- **Deployment per rsync über SSH statt FTPS.** Neuer Workflow `.github/workflows/deploy.yml`: ruft die CI auf dem gemergten Stand auf, überträgt per rsync mit eigenem Deploy-Schlüssel und fest hinterlegtem Host-Key und ruft danach den Health-Check auf. Zugangsdaten im GitHub-Environment `production`. `ci.yml` läuft nur noch bei Pull Requests und als Aufruf aus dem Deploy.
+- Was auf dem Server unangetastet bleibt (`config/config.php`, `data/`), steht jetzt in `deploy/rsync-exclude.txt`.
 - `CLAUDE.md` verweist für die Coding-Regeln jetzt auf das Repo [tgigold/coding-regeln](https://github.com/tgigold/coding-regeln) statt auf die veraltete Wiki-Seite.
+- README: Abschnitt „Deployment und Updates“ beschreibt Server, Pfad, Health-Check, Zugriff und Rollback. Setup-Code und „Passwort vergessen“ laufen über SFTP statt FTP.
+
+### Entfernt
+- FTPS-Deployment (`SamKirkland/FTP-Deploy-Action`). Die Secrets `FTP_SERVER`, `FTP_USERNAME` und `FTP_PASSWORD` werden nicht mehr gebraucht.
 
 ## [0.8.4] - 2026-11-07
 

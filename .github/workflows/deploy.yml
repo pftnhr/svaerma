@@ -1,0 +1,68 @@
+# Deployment per rsync über SSH (Regeln H-9 bis H-16).
+#
+# Environment "production" braucht
+#   Secrets:   SSH_HOST, SSH_USER, SSH_KEY, SSH_KNOWN_HOSTS, DEPLOY_PATH
+#   Variable:  HEALTH_URL (https://checkin.gigold.me/health)
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# H-14: nie zwei Deployments gleichzeitig, ein laufendes wird nicht abgebrochen
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # H-9: CI läuft noch einmal auf dem gemergten Stand
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      # Kein Composer-Schritt: svaerma hat keine Laufzeit-Abhängigkeiten, vendor/ bleibt draußen.
+
+      # H-12: eigener Schlüssel, Host-Key fest hinterlegt
+      - name: SSH einrichten
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # H-13: --delete entfernt nur, was nicht in der Ausschlussliste steht;
+      # Config, Datenbank, Backups, Sessions und Logs bleiben unangetastet.
+      - name: Übertragen
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          rsync --archive --compress --delete --itemize-changes \
+            --exclude-from=deploy/rsync-exclude.txt \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            ./ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
+
+      - name: Health-Check
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: curl --fail --silent --show-error --max-time 20 --retry 3 --retry-delay 5 "$HEALTH_URL" > /dev/null
+
+      - name: Schlüssel entfernen
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
