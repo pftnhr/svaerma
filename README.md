@@ -4,8 +4,35 @@ Ein persönliches Check-in-Log als Swarm-Ersatz: Du checkst bewusst an Orten ein
 
 Live unter `https://checkin.gigold.me`.
 
+## Steckbrief
+
+| | |
+|---|---|
+| **Zweck** | Persönliches Check-in-Log als Swarm-Ersatz für einen Nutzer, mit optional öffentlichem Verlauf und öffentlicher Karte |
+| **Abhängigkeiten** | abhängigkeitsfrei mit eigenem Autoloader; Composer nur für Dev-Werkzeuge (PHPUnit, PHPStan) |
+| **Frontend** | Bootstrap 5.3.8 + Bootstrap Icons 1.13.2, dazu eigenes CSS · Schrift: Systemschriften von Bootstrap · JavaScript: ja, für Standort, Ortssuche, Karte (Leaflet 1.9.4), Löschen-Dialog, PWA/Service Worker |
+| **Datenbank** | SQLite |
+| **Zugang** | Login (ein Nutzer); Verlauf, Karte und Detailseiten optional öffentlich · API: ja, mit Bearer-Token für den iOS-Kurzbefehl und eigene Clients |
+| **Personenbezogene Daten** | Check-ins des Nutzers (Ort, Koordinaten, Zeitpunkt, Notiz), dauerhaft bis zum Löschen; IP-Adressen fehlgeschlagener Logins, nach 15 Minuten gelöscht; Sessions in `data/sessions` |
+| **Uploads** | Swarm-Export (JSON) beim Import; wird nur gelesen, nie gespeichert; Höchstgröße `upload_max_filesize` des Servers |
+| **Fremde Dienste** | Server: Overpass (overpass.ch mit Key, overpass-api.de u. a.), Photon, Nominatim, Geoapify (nur mit Key), GitHub-API für den Update-Hinweis · Browser: Kartenkacheln von `tile.openstreetmap.org` (siehe Abweichungen) |
+| **Repo** | öffentlich · Lizenz: Unlicense |
+| **Server** | All-Inkl, `/www/htdocs/gigold/checkin_gigold_me`, `https://checkin.gigold.me`, PHP 8.5 |
+| **Deployment** | rsync über SSH, `main` ist live (siehe [Deployment und Updates](#deployment-und-updates)) |
+| **Cronjobs** | keine |
+| **Coding-Regeln** | Version 1.2.0 |
+
+### Abweichungen von den Coding-Regeln
+
+| Regel | Was hier stattdessen gilt | Warum |
+|---|---|---|
+| `T-4` | Leaflet 1.9.4 wird zusätzlich zu Bootstrap und Bootstrap Icons mit ausgeliefert, lokal unter `public/assets/vendor/` | Die Karte ist Kern der App (Einchecken, Verlauf, Detailseiten). Leaflet ist die verbreitete, schlanke Bibliothek dafür und läuft ohne Build und ohne fremde Server. |
+| `D-1` | Der Browser lädt Kartenkacheln direkt vom Kachel-Server (`osm.tile_url`, Standard `tile.openstreetmap.org`). Die CSP erlaubt in `img-src` nur diesen Host und seine Subdomains; dank `Referrer-Policy` sieht er nur die Domain, nie den Pfad. | Ohne Karte ist die App nicht nutzbar. Die Kacheln über den eigenen Server zu leiten, bräuchte einen Kachel-Proxy mit Cache auf dem Shared Webspace, mit eigener Last, eigenem Speicherbedarf und eigener Fehlerquelle. |
+| `T-5` | Fremde Dateien liegen unter `public/assets/vendor/<name>/` ohne Version im Pfad; Caches werden über `?v=<App-Version>` erneuert | Noch nicht umgestellt, wird in einem eigenen PR behoben. |
+
 ## Inhalt
 
+- [Steckbrief](#steckbrief)
 - [Anforderungen](#anforderungen)
 - [Verzeichnisstruktur](#verzeichnisstruktur)
 - [Installation](#installation)
@@ -409,12 +436,7 @@ Für svaerma gelten die projektübergreifenden [Coding-Regeln](https://github.co
 - Bereits ausgerollte Migrationen werden nie geändert, es gibt immer eine neue (siehe [Migrationen](#migrationen)).
 - Das Repo ist öffentlich und enthält keine Anweisungsdateien für KI-Assistenten (`G-18`); `CLAUDE.md` steht deshalb in der `.gitignore`.
 
-**Bekannte Abweichungen von den Regeln.** Sie sind noch nicht entschieden und werden mit dem Projekt-Steckbrief begründet oder behoben:
-
-- **Leaflet** wird mit ausgeliefert, `T-4` erlaubt nur Bootstrap, Bootstrap Icons und Google Fonts. Die Dateien liegen unter `public/assets/vendor/leaflet/` ohne Version im Pfad (`T-5`).
-- **Kartenkacheln** lädt der Browser direkt vom Kachel-Server (`osm.tile_url`, Standard `tile.openstreetmap.org`), `D-1` verlangt, dass der Browser nur den eigenen Server anfragt.
-- **Fallback-Installation** ins Web-Root (siehe [Installation](#fallback-document-root-lässt-sich-nicht-auf-public-setzen)) widerspricht `G-1`. Auf dem Live-Server zeigt das Document Root auf `public/`.
-- **Pflichtdateien** nach `G-2` und `G-4` fehlen: Projekt-Steckbrief am Anfang der README, `SECURITY.md`, `.editorconfig`, `THIRD-PARTY-LICENSES.md`.
+Bewusste Abweichungen stehen mit Regelnummer und Begründung im [Steckbrief](#abweichungen-von-den-coding-regeln). Was dort nicht steht, gilt.
 
 ## Ein neues Feature hinzufügen
 

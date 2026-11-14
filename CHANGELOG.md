@@ -8,7 +8,11 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Hinzugefügt
-- README-Abschnitt **„Coding-Regeln“**: Verweis auf die [Coding-Regeln](https://github.com/tgigold/coding-regeln), die Arbeitsweise in diesem Repo (CHANGELOG, Tests, Migrationen) und die bekannten, noch offenen Abweichungen von den Regeln.
+- **Projekt-Steckbrief** am Anfang der README, mit den begründeten Abweichungen von den Coding-Regeln: Leaflet (`T-4`), Kartenkacheln direkt von OSM (`D-1`), Vendor-Pfade ohne Version (`T-5`, wird noch behoben).
+- `SECURITY.md`: Sicherheitslücken vertraulich über „Report a vulnerability“ melden (private Meldungen im Repo eingeschaltet).
+- `THIRD-PARTY-LICENSES.md` für Bootstrap, Bootstrap Icons und Leaflet.
+- `.editorconfig`: UTF-8, LF, 4 Leerzeichen für PHP, 2 für JS, CSS, JSON und YAML.
+- README-Abschnitt **„Coding-Regeln“**: Verweis auf die [Coding-Regeln](https://github.com/tgigold/coding-regeln), die Arbeitsweise in diesem Repo (CHANGELOG, Tests, Migrationen) und ein Verweis auf die Abweichungen im Steckbrief.
 - **Health-Check** unter `/health`: antwortet ohne Login mit `200` und `ok`, auch während Migrationen ausstehen. Der Deploy-Workflow prüft damit, ob die App nach dem Übertragen läuft.
 
 ### Geändert
