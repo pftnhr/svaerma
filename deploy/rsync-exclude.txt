@@ -25,11 +25,14 @@
 /phpstan-baseline.neon
 /.phpunit.cache/
 /.phpunit.result.cache
-/CLAUDE.md
 .DS_Store
 
 # Lebt nur auf dem Server und bleibt unangetastet.
 # data/.htaccess kommt aus dem Repo und wird mit ausgeliefert, alles andere in data/ nicht.
 /config/config.php
+# Die Fallback-.htaccess im Projektverzeichnis ist auf dem Server bewusst als _.htaccess
+# abgelegt (deaktiviert); das Document Root zeigt auf public/. Nicht anfassen.
+/.htaccess
+/_.htaccess
 + /data/.htaccess
 /data/*

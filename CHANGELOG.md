@@ -12,7 +12,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Geändert
 - **Deployment per rsync über SSH statt FTPS.** Neuer Workflow `.github/workflows/deploy.yml`: ruft die CI auf dem gemergten Stand auf, überträgt per rsync mit eigenem Deploy-Schlüssel und fest hinterlegtem Host-Key und ruft danach den Health-Check auf. Zugangsdaten im GitHub-Environment `production`. `ci.yml` läuft nur noch bei Pull Requests und als Aufruf aus dem Deploy.
-- Was auf dem Server unangetastet bleibt (`config/config.php`, `data/`), steht jetzt in `deploy/rsync-exclude.txt`.
+- Was auf dem Server unangetastet bleibt (`config/config.php`, `data/` und die dort deaktivierte Fallback-`.htaccess` im Projektverzeichnis), steht jetzt in `deploy/rsync-exclude.txt`.
 - `CLAUDE.md` verweist für die Coding-Regeln jetzt auf das Repo [tgigold/coding-regeln](https://github.com/tgigold/coding-regeln) statt auf die veraltete Wiki-Seite.
 - README: Abschnitt „Deployment und Updates“ beschreibt Server, Pfad, Health-Check, Zugriff und Rollback. Setup-Code und „Passwort vergessen“ laufen über SFTP statt FTP.
 
