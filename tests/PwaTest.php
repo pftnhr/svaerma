@@ -40,7 +40,7 @@ final class PwaTest extends TestCase
 
     public function testPrecachedFilesExist(): void
     {
-        foreach (['offline.html', 'assets/icons/apple-touch-icon.png', 'assets/css/app.css', 'assets/js/checkin.js', 'assets/js/map.js'] as $file) {
+        foreach (['offline.html', 'assets/icons/apple-touch-icon.png', 'assets/css/core.css', 'assets/vendor/bricolage-grotesque-5.2.10/latin.woff2', 'assets/js/checkin.js', 'assets/js/map.js'] as $file) {
             self::assertFileExists(APP_ROOT . '/public/' . $file);
         }
     }

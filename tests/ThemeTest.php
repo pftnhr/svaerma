@@ -134,7 +134,7 @@ final class ThemeTest extends TestCase
         self::assertSame('nacht', $app->settings()->get('theme'));
 
         $html = $this->get($app, '/settings')->body;
-        self::assertMatchesRegularExpression('#css/app\.css.*/themes/nacht/theme\.css\?v=\d+#s', $html);
+        self::assertMatchesRegularExpression('#css/core\.css.*/themes/nacht/theme\.css\?v=\d+#s', $html);
         self::assertStringContainsString('<option value="nacht" selected>', preg_replace('/\s+>/', '>', $html) ?? '');
     }
 

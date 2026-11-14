@@ -10,7 +10,7 @@ Live unter `https://checkin.gigold.me`.
 |---|---|
 | **Zweck** | Persönliches Check-in-Log als Swarm-Ersatz für einen Nutzer, mit optional öffentlichem Verlauf und öffentlicher Karte |
 | **Abhängigkeiten** | abhängigkeitsfrei mit eigenem Autoloader; Composer nur für Dev-Werkzeuge (PHPUnit, PHPStan) |
-| **Frontend** | Bootstrap 5.3.8 + Bootstrap Icons 1.13.2, dazu eigenes CSS · Schrift: Systemschriften von Bootstrap · JavaScript: ja, für Standort, Ortssuche, Karte (Leaflet 1.9.4), Löschen-Dialog, PWA/Service Worker |
+| **Frontend** | Eigenes CSS (`public/assets/css/core.css`, Design „Stempelheft“, hell und dunkel) + Bootstrap Icons 1.13.2 · Schrift: Bricolage Grotesque (Google Fonts, OFL), selbst gehostet · JavaScript: ja, für Standort, Ortssuche, Karte (Leaflet 1.9.4), Löschen-Dialog, PWA/Service Worker |
 | **Datenbank** | SQLite |
 | **Zugang** | Login (ein Nutzer); Verlauf, Karte und Detailseiten optional öffentlich · API: ja, mit Bearer-Token für den iOS-Kurzbefehl und eigene Clients |
 | **Personenbezogene Daten** | Check-ins des Nutzers (Ort, Koordinaten, Zeitpunkt, Notiz), dauerhaft bis zum Löschen; IP-Adressen fehlgeschlagener Logins, nach 15 Minuten gelöscht; Sessions in `data/sessions` |
@@ -26,7 +26,7 @@ Live unter `https://checkin.gigold.me`.
 
 | Regel | Was hier stattdessen gilt | Warum |
 |---|---|---|
-| `T-4` | Leaflet 1.9.4 wird zusätzlich zu Bootstrap und Bootstrap Icons mit ausgeliefert, lokal unter `public/assets/vendor/leaflet-1.9.4/` | Die Karte ist Kern der App (Einchecken, Verlauf, Detailseiten). Leaflet ist die verbreitete, schlanke Bibliothek dafür und läuft ohne Build und ohne fremde Server. |
+| `T-4` | Leaflet 1.9.4 wird zusätzlich zu Bootstrap Icons mit ausgeliefert, lokal unter `public/assets/vendor/leaflet-1.9.4/` | Die Karte ist Kern der App (Einchecken, Verlauf, Detailseiten). Leaflet ist die verbreitete, schlanke Bibliothek dafür und läuft ohne Build und ohne fremde Server. |
 | `D-1` | Der Browser lädt Kartenkacheln direkt vom Kachel-Server (`osm.tile_url`, Standard `tile.openstreetmap.org`). Die CSP erlaubt in `img-src` nur diesen Host und seine Subdomains; dank `Referrer-Policy` sieht er nur die Domain, nie den Pfad. | Ohne Karte ist die App nicht nutzbar. Die Kacheln über den eigenen Server zu leiten, bräuchte einen Kachel-Proxy mit Cache auf dem Shared Webspace, mit eigener Last, eigenem Speicherbedarf und eigener Fehlerquelle. |
 
 ## Inhalt
@@ -57,7 +57,7 @@ Live unter `https://checkin.gigold.me`.
 - Apache mit `mod_rewrite` und `.htaccess` (`AllowOverride All`)
 - HTTPS (die Geolocation im Browser funktioniert nur darüber)
 
-Es gibt keine Laufzeit-Abhängigkeiten. Composer brauchst du nur für die Dev-Tools (PHPUnit, PHPStan), die App selbst läuft ohne `vendor/`. Bootstrap, Bootstrap Icons und Leaflet liegen selbst gehostet in `public/assets/vendor/` (mit Subresource Integrity), es werden keine Skripte von fremden Servern geladen.
+Es gibt keine Laufzeit-Abhängigkeiten. Composer brauchst du nur für die Dev-Tools (PHPUnit, PHPStan), die App selbst läuft ohne `vendor/`. Bootstrap Icons, Leaflet und die Schrift Bricolage Grotesque liegen selbst gehostet in `public/assets/vendor/` (Stylesheets und Skripte mit Subresource Integrity), es werden keine Skripte, Stylesheets oder Schriften von fremden Servern geladen.
 
 ## Verzeichnisstruktur
 
@@ -325,7 +325,9 @@ Unter *Einstellungen → Import & Export* (nur eingeloggt):
 
 ## Eigene Designs
 
-Ein Design ist reines CSS. Es liegt als Ordner in `data/themes/<name>/`, also dort, wo auch Datenbank und Backups liegen. Updates und Deployments fassen `data/` nie an, ein eigenes Design überlebt damit jedes Release.
+Das Standard-Design „Stempelheft“ steckt in `public/assets/css/core.css`. Es folgt der Systemeinstellung für hell oder dunkel. Alle Regeln liegen in `@layer core`, die Farben, Schriften, Radien und Kartenfarben sind CSS-Variablen (`--sv-…`) in `:root`.
+
+Ein eigenes Design ist reines CSS. Es liegt als Ordner in `data/themes/<name>/`, also dort, wo auch Datenbank und Backups liegen. Updates und Deployments fassen `data/` nie an, ein eigenes Design überlebt damit jedes Release.
 
 ```
 data/themes/nachtschwarm/
@@ -344,6 +346,18 @@ data/themes/nachtschwarm/
  * sv-theme-api: 1
  */
 ```
+
+Weil `core.css` in einem Layer liegt und `theme.css` ohne Layer danach geladen wird, gewinnt das Theme immer, unabhängig von der Spezifität. Meist reicht es, Variablen zu überschreiben:
+
+```css
+:root {
+  --sv-accent: #2B59C3;
+  --sv-highlight: #FFE48A;
+  --sv-font-head: "Space Grotesk", system-ui, sans-serif;
+}
+```
+
+Die dunkle Variante setzt `core.css` per `@media (prefers-color-scheme: dark)`. Ein Theme, das nur `:root` überschreibt, gilt in beiden Modi. Wer eigene Nachtfarben will, schreibt selbst einen `@media (prefers-color-scheme: dark)`-Block. Markerfarben auf der Karte kommen aus `--sv-marker-fill` und `--sv-marker-stroke`, der Look der Kacheln aus `--sv-map-tile-filter`. Die Quelle der Kacheln bleibt in `config.php` (`osm.tile_url`), weil die Content Security Policy nur diesen Host zulässt.
 
 Ausgewählt wird das Design in den Einstellungen unter *Darstellung*. Passt `sv-theme-api` nicht zur App, bleibt das Design nutzbar, die Einstellungen zeigen aber einen Hinweis.
 

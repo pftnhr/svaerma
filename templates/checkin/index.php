@@ -8,48 +8,47 @@ use App\Format;
 
 $title = 'Verlauf';
 ?>
-<div class="d-flex align-items-baseline justify-content-between mb-3">
-    <h1 class="h3 mb-0">Verlauf</h1>
-    <span class="text-body-secondary small"><?= e(Format::number($total)) ?> Check-ins</span>
-</div>
-
-<?php if ($days === []): ?>
-    <div class="text-center py-5 text-body-secondary">
-        <i class="bi bi-geo display-5"></i>
-        <p class="mt-3">Noch keine Check-ins.<?php if ($loggedIn): ?> <a href="/">Jetzt einchecken</a><?php endif; ?></p>
+<div class="sv-narrow">
+    <div class="sv-pagehead">
+        <h1>Verlauf</h1>
+        <span class="sv-sticker"><strong><?= e(Format::number($total)) ?></strong><span>Stempel</span></span>
     </div>
-<?php endif; ?>
 
-<?php foreach ($days as $checkins): ?>
-    <h2 class="h6 text-body-secondary mt-4 mb-2"><?= e(Format::day($checkins[0]->localTime())) ?></h2>
-    <div class="list-group mb-2">
-        <?php foreach ($checkins as $c): ?>
-            <a class="list-group-item list-group-item-action d-flex gap-3 align-items-start" href="<?= e($c->path()) ?>">
-                <span class="text-body-secondary small checkin-time"><?= e($c->localTime()->format('H:i')) ?></span>
-                <span class="flex-grow-1 min-w-0">
-                    <span class="d-block fw-semibold text-truncate"><?= e($c->placeName) ?></span>
+    <?php if ($days === []): ?>
+        <div class="sv-empty">
+            <i class="bi bi-geo" aria-hidden="true"></i>
+            <p>Noch keine Check-ins.<?php if ($loggedIn): ?> <a href="/">Jetzt einchecken</a><?php endif; ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php foreach ($days as $checkins): ?>
+        <h2 class="sv-day"><?= e(Format::dayInYear($checkins[0]->localTime())) ?></h2>
+        <ul class="sv-entries">
+            <?php foreach ($checkins as $c): ?>
+                <li><a class="sv-entry" href="<?= e($c->path()) ?>">
+                    <span class="sv-entry__time"><?= e($c->localTime()->format('H:i')) ?></span>
+                    <span class="sv-entry__name"><?= e($c->placeName) ?></span>
                     <?php if ($showNotes && $c->note !== null): ?>
-                        <span class="d-block small text-body-secondary text-truncate"><?= e($c->note) ?></span>
+                        <i class="bi bi-pencil sv-entry__icon" role="img" aria-label="mit Notiz" title="<?= e(mb_strimwidth($c->note, 0, 120, '…')) ?>"></i>
                     <?php endif; ?>
-                </span>
-                <?php if ($loggedIn && $c->osmType === null): ?>
-                    <i class="bi bi-pencil-square text-body-tertiary" title="Eigener Ort"></i>
-                <?php endif; ?>
-            </a>
-        <?php endforeach; ?>
-    </div>
-<?php endforeach; ?>
-
-<?php if ($pages > 1): ?>
-    <nav class="mt-4" aria-label="Seiten">
-        <ul class="pagination justify-content-center">
-            <li class="page-item<?= $page <= 1 ? ' disabled' : '' ?>">
-                <a class="page-link" href="/checkins?page=<?= e($page - 1) ?>" aria-label="Neuere">‹ Neuere</a>
-            </li>
-            <li class="page-item disabled"><span class="page-link"><?= e($page) ?> / <?= e($pages) ?></span></li>
-            <li class="page-item<?= $page >= $pages ? ' disabled' : '' ?>">
-                <a class="page-link" href="/checkins?page=<?= e($page + 1) ?>" aria-label="Ältere">Ältere ›</a>
-            </li>
+                </a></li>
+            <?php endforeach; ?>
         </ul>
-    </nav>
-<?php endif; ?>
+    <?php endforeach; ?>
+
+    <?php if ($pages > 1): ?>
+        <nav class="sv-pager" aria-label="Seiten">
+            <?php if ($page > 1): ?>
+                <a class="sv-btn sv-btn--small" href="/checkins?page=<?= e($page - 1) ?>">‹ Neuere</a>
+            <?php else: ?>
+                <span class="sv-btn sv-btn--small" aria-disabled="true">‹ Neuere</span>
+            <?php endif; ?>
+            <span class="sv-muted"><?= e($page) ?> / <?= e($pages) ?></span>
+            <?php if ($page < $pages): ?>
+                <a class="sv-btn sv-btn--small" href="/checkins?page=<?= e($page + 1) ?>">Ältere ›</a>
+            <?php else: ?>
+                <span class="sv-btn sv-btn--small" aria-disabled="true">Ältere ›</span>
+            <?php endif; ?>
+        </nav>
+    <?php endif; ?>
+</div>

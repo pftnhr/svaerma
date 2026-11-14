@@ -10,12 +10,17 @@ use App\Model\Checkin;
 final class CheckinController extends Controller
 {
     public const PER_PAGE = 50;
+    /** Check-ins in the "Zuletzt" column next to the check-in form (desktop). */
+    public const RECENT = 8;
 
     /** @param array<string, string> $params */
     public function create(array $params): Response
     {
+        $repo = $this->app->checkins();
         return $this->render('checkin/create', [
             'radius' => $this->app->nearbyRadius(),
+            'recent' => self::byDay($repo->page(self::RECENT, 0)),
+            'total' => $repo->count(),
             'scripts' => ['checkin.js'],
         ]);
     }
@@ -46,22 +51,8 @@ final class CheckinController extends Controller
             return $this->redirect('/checkins?page=' . $pages);
         }
 
-        // Group consecutive check-ins by their local calendar day. The list is sorted by
-        // UTC, so after travelling across time zones a day may appear twice – that is
-        // better than moving entries out of order into an earlier group.
-        $days = [];
-        $current = null;
-        foreach ($repo->page(self::PER_PAGE, ($page - 1) * self::PER_PAGE, $visibility) as $checkin) {
-            $day = $checkin->localTime()->format('Y-m-d');
-            if ($day !== $current) {
-                $days[] = [];
-                $current = $day;
-            }
-            $days[array_key_last($days)][] = $checkin;
-        }
-
         return $this->render('checkin/index', [
-            'days' => $days,
+            'days' => self::byDay($repo->page(self::PER_PAGE, ($page - 1) * self::PER_PAGE, $visibility)),
             'page' => $page,
             'pages' => $pages,
             'total' => $total,
@@ -191,5 +182,28 @@ final class CheckinController extends Controller
             ];
         }
         return Response::json($rows, 200, false)->withHeader('Cache-Control', 'private, no-cache');
+    }
+
+    /**
+     * Groups consecutive check-ins by their local calendar day. The list is sorted by
+     * UTC, so after travelling across time zones a day may appear twice – that is
+     * better than moving entries out of order into an earlier group.
+     *
+     * @param list<Checkin> $checkins
+     * @return list<non-empty-list<Checkin>>
+     */
+    private static function byDay(array $checkins): array
+    {
+        $days = [];
+        $current = null;
+        foreach ($checkins as $checkin) {
+            $day = $checkin->localTime()->format('Y-m-d');
+            if ($day !== $current) {
+                $days[] = [];
+                $current = $day;
+            }
+            $days[array_key_last($days)][] = $checkin;
+        }
+        return $days;
     }
 }

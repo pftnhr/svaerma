@@ -4,7 +4,21 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!window.L) return;
 
   var ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
-  var MARKER = { radius: 7, color: '#fff', weight: 2, fillColor: '#0d6efd', fillOpacity: 0.9 };
+  // Marker colours come from CSS variables, so themes and the dark variant set them.
+  // The overview map draws on a canvas (fast with thousands of points), which CSS
+  // cannot style directly; the class is there for the SVG marker on detail pages.
+  var css = getComputedStyle(document.documentElement);
+  function cssVar(name, fallback) {
+    return css.getPropertyValue(name).trim() || fallback;
+  }
+  var MARKER = {
+    className: 'sv-marker',
+    radius: 7,
+    weight: 2,
+    color: cssVar('--sv-marker-stroke', '#fff'),
+    fillColor: cssVar('--sv-marker-fill', '#D93A16'),
+    fillOpacity: 0.95,
+  };
 
   function tiles(map, url) {
     L.tileLayer(url, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(map);
@@ -33,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return res.json();
     })
     .then(function (rows) {
-      var loading = all.querySelector('.map-loading');
+      var loading = all.querySelector('.sv-map-loading');
       if (loading) loading.remove();
       if (!rows.length) return;
 
@@ -44,9 +58,8 @@ document.addEventListener('DOMContentLoaded', function () {
         var link = document.createElement('a');
         link.href = r[4];
         link.textContent = r[3];
-        link.className = 'fw-semibold';
         var date = document.createElement('div');
-        date.className = 'small text-body-secondary';
+        date.className = 'sv-muted sv-small';
         date.textContent = r[5].split('-').reverse().join('.');
         popup.appendChild(link);
         popup.appendChild(date);
@@ -56,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
       map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
     })
     .catch(function (err) {
-      var loading = all.querySelector('.map-loading');
+      var loading = all.querySelector('.sv-map-loading');
       if (loading) loading.textContent = 'Karte konnte nicht geladen werden (' + err.message + ').';
     });
 });

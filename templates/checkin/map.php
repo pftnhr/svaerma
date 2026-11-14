@@ -2,6 +2,7 @@
 /** @var string $tileUrl */
 $title = 'Karte';
 ?>
-<div class="map-full" id="map-all" data-src="/map/data" data-tiles="<?= e($tileUrl) ?>">
-    <div class="map-loading small text-body-secondary p-3">Karte wird geladen …</div>
+<h1 class="sv-visually-hidden">Karte</h1>
+<div class="sv-map-full" id="map-all" data-src="/map/data" data-tiles="<?= e($tileUrl) ?>">
+    <div class="sv-map-loading">Karte wird geladen …</div>
 </div>

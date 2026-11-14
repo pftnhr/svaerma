@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Close buttons in flash messages.
+  document.querySelectorAll('[data-dismiss]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var alert = button.closest('.sv-alert');
+      if (alert) alert.remove();
+    });
+  });
+
   // PWA: register the service worker (served by PHP at /sw.js, see PwaController).
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function () { /* not critical */ });

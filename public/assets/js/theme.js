@@ -1,9 +1,15 @@
-// Follow the system colour scheme (Bootstrap 5.3 colour modes).
+// Browser bar colour (meta theme-color) from the CSS variable --sv-theme-color,
+// so themes and the dark variant set it in CSS. Runs in <head> after the stylesheets.
 (function () {
-  var media = window.matchMedia('(prefers-color-scheme: dark)');
+  'use strict';
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
   function apply() {
-    document.documentElement.setAttribute('data-bs-theme', media.matches ? 'dark' : 'light');
+    var color = getComputedStyle(document.documentElement).getPropertyValue('--sv-theme-color').trim();
+    if (color) meta.setAttribute('content', color);
   }
   apply();
-  media.addEventListener('change', apply);
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+  }
 })();

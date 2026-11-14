@@ -73,7 +73,7 @@ test('login rejects a wrong password and accepts the right one', async ({ page }
   await expect(page).toHaveURL(/\/login$/);
   await page.fill('#password', 'wrong password');
   await page.click('button[type=submit]');
-  await expect(page.locator('.alert-danger')).toContainText('Passwort ist falsch');
+  await expect(page.locator('.sv-alert--danger')).toContainText('Passwort ist falsch');
   await login(page);
 });
 
@@ -81,17 +81,18 @@ test('check-in: location, nearby list, confirm and save', async ({ page }) => {
   await login(page);
   const radii = await fakeNearby(page, [
     place(),
-    place({ name: 'Späti Eck', osm_id: 1002, category: 'Kiosk', address: null, distance: 1250, visits: 3, last_visit: '01.11.2026' }),
+    place({ name: 'Späti Eck', osm_id: 1002, category: 'Kiosk', address: null, distance: 1250, visits: 3, last_visit: '01.11.2024' }),
   ]);
   await page.goto('/');
 
   await expect(page.locator('#geo-status')).toHaveText('Standort ±20 m');
-  const items = page.locator('#places .place-item');
+  const items = page.locator('#places .sv-place');
   await expect(items).toHaveCount(2);
   await expect(items.nth(0)).toContainText('Café · Pariser Platz 1');
-  await expect(items.nth(0).locator('.place-distance')).toHaveText('18 m');
-  await expect(items.nth(1).locator('.place-distance')).toHaveText('1,3 km');
-  await expect(items.nth(1)).toContainText('zuletzt 01.11.2026 · 3×');
+  await expect(items.nth(0).locator('.sv-stamp')).toHaveText('18 m');
+  await expect(items.nth(1).locator('.sv-stamp')).toHaveText('1,3 km');
+  await expect(items.nth(1).locator('.sv-chip')).toHaveText('schon gestempelt · 01.11.2024 · 3×');
+  await expect(items.nth(0).locator('.sv-chip')).toHaveCount(0);
   expect(radii).toEqual([150]);
 
   await items.nth(0).click();
@@ -101,7 +102,7 @@ test('check-in: location, nearby list, confirm and save', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/checkin\/\d+-cafe-mueller$/);
   await expect(page.locator('h1')).toHaveText('Café Müller');
-  await expect(page.locator('.note')).toHaveText('Erster Kaffee');
+  await expect(page.locator('.sv-note')).toHaveText('Erster Kaffee');
 });
 
 test('widening the radius doubles it up to the maximum', async ({ page }) => {
@@ -132,7 +133,7 @@ test('search sends the query and the position', async ({ page }) => {
 
   await page.fill('#search-q', 'Reichstag');
   await page.press('#search-q', 'Enter');
-  await expect(page.locator('#places .place-item')).toHaveText(/Reichstag/);
+  await expect(page.locator('#places .sv-place')).toHaveText(/Reichstag/);
   expect(searched?.get('q')).toBe('Reichstag');
   expect(searched?.get('lat')).toBe('52.5163');
 });
@@ -192,7 +193,7 @@ test('map of all check-ins shows popups with links', async ({ page }) => {
   await page.goto('/map');
   const rows = await (await data).json();
   expect(rows.map((r) => r[4])).toContain(detail);
-  await expect(page.locator('.map-loading')).toHaveCount(0);
+  await expect(page.locator('.sv-map-loading')).toHaveCount(0);
 
   // Markers are drawn on a canvas (preferCanvas); all test check-ins sit near the
   // centre of the fitted bounds, so a click there hits one of them.
@@ -213,7 +214,7 @@ test('delete asks for confirmation', async ({ page }) => {
   page.once('dialog', (d) => { expect(d.message()).toContain('Zum Löschen'); d.accept(); });
   await page.getByRole('button', { name: 'Löschen' }).click();
   await expect(page).toHaveURL(/\/checkins$/);
-  await expect(page.locator('.alert')).toContainText('gelöscht');
+  await expect(page.locator('.sv-alert')).toContainText('gelöscht');
 });
 
 test('history, settings and login load without CSP violations', async ({ page }) => {
@@ -224,12 +225,13 @@ test('history, settings and login load without CSP violations', async ({ page })
     // @ts-ignore
     expect(await page.evaluate(() => window.__csp), path).toEqual([]);
   }
-  // Fonts and icons are self-hosted: the icon font must actually load.
-  const fontOk = await page.evaluate(async () => {
+  // Fonts and icons are self-hosted: the icon font and the text font must actually load.
+  const fonts = await page.evaluate(async () => {
     await document.fonts.ready;
-    return document.fonts.check('16px bootstrap-icons');
+    await document.fonts.load('16px "Bricolage Grotesque"');
+    return [document.fonts.check('16px bootstrap-icons'), document.fonts.check('16px "Bricolage Grotesque"')];
   });
-  expect(fontOk).toBe(true);
+  expect(fonts).toEqual([true, true]);
 });
 
 test('service worker serves the offline page without network', async ({ page, context }) => {
@@ -259,4 +261,38 @@ test('new API token is selected on focus for copying', async ({ page }) => {
     return el.value.substring(el.selectionStart ?? 0, el.selectionEnd ?? 0);
   })());
   expect(selected).toMatch(/^svm_/);
+});
+
+test('confirm sheet closes without checking in', async ({ page }) => {
+  await login(page);
+  await fakeNearby(page, [place()]);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Café Müller' }).click();
+  await expect(page.locator('#confirm')).toBeVisible();
+  await page.getByRole('button', { name: 'Schließen' }).click();
+  await expect(page.locator('#confirm')).toBeHidden();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test('logout lives in the settings', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+  await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the tab bar replaces the top navigation', async ({ page }) => {
+    await login(page);
+    await expect(page.locator('.sv-topnav')).toBeHidden();
+    await expect(page.locator('.sv-tabbar')).toBeVisible();
+    await expect(page.locator('.sv-tabbar a[aria-current="page"]')).toHaveText('Verlauf');
+    await page.getByRole('link', { name: 'Einchecken' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    // Nothing is wider than the screen.
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
 });

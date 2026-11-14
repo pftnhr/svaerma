@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var widenBtn = document.getElementById('widen');
   var form = document.getElementById('checkin-form');
   var confirmEl = document.getElementById('confirm');
-  var offcanvas = window.bootstrap ? new bootstrap.Offcanvas(confirmEl) : null;
+  var manualToggle = document.getElementById('manual-toggle');
+  var manualEl = document.getElementById('manual');
 
   form.elements.timezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
 
@@ -27,23 +28,33 @@ document.addEventListener('DOMContentLoaded', function () {
     return node;
   }
 
-  function setStatus(text, spinning) {
-    statusEl.textContent = '';
-    if (spinning) {
-      var s = el('span', 'spinner-border spinner-border-sm me-1');
-      s.setAttribute('aria-hidden', 'true');
-      statusEl.appendChild(s);
-    }
-    statusEl.appendChild(document.createTextNode(text));
+  function setStatus(text) {
+    statusEl.textContent = text;
   }
 
+  // type: 'quiet' (progress, nothing found), 'info' or 'warning'
   function showMessage(text, type) {
-    messageEl.className = 'alert alert-' + (type || 'secondary');
+    messageEl.className = 'sv-nearby__message sv-alert sv-alert--' + (type || 'quiet');
     messageEl.textContent = text;
+    messageEl.hidden = false;
   }
 
   function hideMessage() {
-    messageEl.className = 'alert d-none';
+    messageEl.hidden = true;
+  }
+
+  // Same place, same tilt: -9° to +9° derived from the OSM id (or the name).
+  function tilt(p) {
+    var key = (p.osm_type || '') + (p.osm_id || p.name || '');
+    var hash = 0;
+    for (var i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+    return (Math.abs(hash) % 19) - 9;
+  }
+
+  // "01.11.2026" → "01.11." in the current year, otherwise unchanged.
+  function shortDate(date) {
+    var year = String(new Date().getFullYear());
+    return date && date.slice(-4) === year ? date.slice(0, -4) : date;
   }
 
   function formatDistance(m) {
@@ -69,27 +80,26 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderPlaces(places, emptyText) {
     listEl.textContent = '';
     if (!places.length) {
-      showMessage(emptyText, 'secondary');
+      showMessage(emptyText, 'quiet');
       return;
     }
     hideMessage();
     places.forEach(function (p) {
-      var item = el('button', 'list-group-item list-group-item-action place-item d-flex justify-content-between align-items-start gap-2');
+      var item = el('button', 'sv-place');
       item.type = 'button';
 
-      var body = el('div', 'flex-grow-1');
-      body.appendChild(el('div', 'fw-semibold', p.name));
+      var body = el('span', 'sv-place__body');
+      body.appendChild(el('span', 'sv-place__name', p.name));
       var meta = [p.category, p.address].filter(Boolean).join(' · ');
-      if (meta) body.appendChild(el('div', 'small text-body-secondary', meta));
+      if (meta) body.appendChild(el('span', 'sv-place__meta', meta));
       if (p.visits > 0) {
-        var visit = el('div', 'small text-success');
-        visit.appendChild(el('i', 'bi bi-clock-history me-1'));
-        visit.appendChild(document.createTextNode('zuletzt ' + p.last_visit + (p.visits > 1 ? ' · ' + p.visits + '×' : '')));
-        body.appendChild(visit);
+        body.appendChild(el('span', 'sv-chip', 'schon gestempelt · ' + shortDate(p.last_visit) + (p.visits > 1 ? ' · ' + p.visits + '×' : '')));
       }
       item.appendChild(body);
       if (p.distance !== null && p.distance !== undefined) {
-        item.appendChild(el('span', 'badge text-bg-light border place-distance', formatDistance(p.distance)));
+        var stamp = el('span', 'sv-stamp', formatDistance(p.distance));
+        stamp.style.setProperty('--sv-tilt', tilt(p) + 'deg');
+        item.appendChild(stamp);
       }
       item.addEventListener('click', function () { choose(p); });
       listEl.appendChild(item);
@@ -106,24 +116,38 @@ document.addEventListener('DOMContentLoaded', function () {
     var meta = [p.category, p.address].filter(Boolean).join(' · ');
     if (!p.osm_type) meta = 'Eigener Ort · aktueller Standort';
     document.getElementById('confirm-meta').textContent = meta;
-    if (offcanvas) {
-      offcanvas.show();
+    if (typeof confirmEl.showModal === 'function') {
+      if (!confirmEl.open) confirmEl.showModal();
     } else {
-      confirmEl.classList.add('show');
+      confirmEl.setAttribute('open', '');
     }
   }
+
+  function closeConfirm() {
+    if (typeof confirmEl.close === 'function') {
+      confirmEl.close();
+    } else {
+      confirmEl.removeAttribute('open');
+    }
+  }
+
+  document.getElementById('confirm-close').addEventListener('click', closeConfirm);
+  // A click on the backdrop (outside the sheet) closes it.
+  confirmEl.addEventListener('click', function (e) {
+    if (e.target === confirmEl) closeConfirm();
+  });
 
   function loadNearby() {
     if (!position) return;
     // Never search a smaller area than the GPS uncertainty.
     var r = Math.min(maxRadius, Math.max(radius, Math.round(position.accuracy || 0)));
-    showMessage('Suche Orte im Umkreis von ' + r + ' m …', 'light');
+    showMessage('Suche Orte im Umkreis von ' + r + ' m …', 'quiet');
     listEl.textContent = '';
     getJson('/places/nearby?lat=' + position.lat + '&lon=' + position.lon + '&radius=' + r)
       .then(function (data) {
         renderPlaces(data.places, 'Keine Orte im Umkreis von ' + r + ' m gefunden. Erweitere den Umkreis, suche nach dem Namen oder lege einen eigenen Ort an.');
         if (data.notice && data.places.length) showMessage(data.notice, 'info');
-        widenBtn.classList.toggle('d-none', r >= maxRadius);
+        widenBtn.hidden = r >= maxRadius;
       })
       .catch(function (err) {
         showMessage(err.message, 'warning');
@@ -132,20 +156,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function locate() {
     if (!navigator.geolocation) {
-      setStatus('Dein Browser unterstützt keine Standortbestimmung. Nutze die Suche.', false);
+      setStatus('Dein Browser unterstützt keine Standortbestimmung. Nutze die Suche.');
       return;
     }
-    setStatus('Standort wird ermittelt …', true);
+    setStatus('Standort wird ermittelt …');
     navigator.geolocation.getCurrentPosition(function (pos) {
       position = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
-      setStatus('Standort ±' + Math.round(pos.coords.accuracy) + ' m', false);
+      setStatus('Standort ±' + Math.round(pos.coords.accuracy) + ' m');
       radius = baseRadius;
       loadNearby();
     }, function (err) {
       var text = err.code === 1
         ? 'Standortzugriff verweigert. Erlaube ihn in den Browser-Einstellungen oder nutze die Suche.'
         : 'Standort konnte nicht ermittelt werden. Nutze die Suche.';
-      setStatus(text, false);
+      setStatus(text);
     }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
   }
 
@@ -162,12 +186,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (q.length < 2) return;
     var url = '/places/search?q=' + encodeURIComponent(q);
     if (position) url += '&lat=' + position.lat + '&lon=' + position.lon;
-    showMessage('Suche „' + q + '“ …', 'light');
+    showMessage('Suche „' + q + '“ …', 'quiet');
     listEl.textContent = '';
-    widenBtn.classList.add('d-none');
+    widenBtn.hidden = true;
     getJson(url)
       .then(function (data) { renderPlaces(data.places, 'Nichts gefunden für „' + q + '“.'); })
       .catch(function (err) { showMessage(err.message, 'warning'); });
+  });
+
+  manualToggle.addEventListener('click', function () {
+    var open = manualToggle.getAttribute('aria-expanded') !== 'true';
+    manualToggle.setAttribute('aria-expanded', String(open));
+    manualEl.hidden = !open;
+    if (open) document.getElementById('manual-name').focus();
   });
 
   document.getElementById('manual-use').addEventListener('click', function () {

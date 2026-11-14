@@ -5,20 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Offline · svaerma</title>
-<!-- Self-contained on purpose: shown by the service worker when there is no network. -->
+<!-- Self-contained on purpose: shown by the service worker when there is no network.
+     Colours follow the default look "Stempelheft" (public/assets/css/core.css). -->
 <style>
-  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f8f9fa; color: #212529; text-align: center; padding: 1rem; }
-  img { width: 72px; height: 72px; border-radius: 16px; }
-  h1 { font-size: 1.25rem; margin: 1rem 0 .5rem; }
-  p { color: #6c757d; margin: 0 0 1.5rem; }
-  a { display: inline-block; padding: .5rem 1rem; border-radius: .375rem; background: #0d6efd; color: #fff; text-decoration: none; }
-  @media (prefers-color-scheme: dark) { body { background: #212529; color: #dee2e6; } p { color: #adb5bd; } }
+  :root { --bg: #fff; --ink: #1C1410; --muted: #5A4E46; --accent: #D93A16; --on-accent: #fff; --highlight: #FFD23F; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16110E; --ink: #F4ECE6; --muted: #B9ACA3; --accent: #FF6B42; --on-accent: #16110E; --highlight: #F2C230; }
+  }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+         background: var(--bg); color: var(--ink); text-align: center;
+         font-family: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 22rem; padding: 28px 24px; border: 2px solid var(--ink); border-radius: 20px; background: var(--highlight); color: #1C1410; }
+  .brand { display: block; margin-bottom: 12px; font-size: 26px; font-weight: 800; letter-spacing: -0.035em; }
+  h1 { margin: 0 0 8px; font-size: 24px; }
+  p { margin: 0 0 20px; }
+  a { display: inline-block; padding: 12px 20px; border: 2px solid #1C1410; border-radius: 12px;
+      background: var(--accent); color: var(--on-accent); font-weight: 700; text-decoration: none; }
 </style>
 </head>
 <body>
 <main>
-  <img src="/assets/icons/icon-192.png" alt="">
+  <span class="brand">svaerma</span>
   <h1>Keine Verbindung</h1>
   <p>Zum Einchecken braucht svaerma Internet. Versuch es gleich noch einmal.</p>
   <a href="/">Neu laden</a>

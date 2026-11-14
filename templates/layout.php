@@ -3,66 +3,54 @@
 /** @var string $csrf */
 /** @var bool $loggedIn */
 /** @var bool $publicNav */
-$nav = $loggedIn
-    ? [
-        '/' => ['bi-geo-alt', 'Einchecken'],
-        '/checkins' => ['bi-list-ul', 'Verlauf'],
-        '/map' => ['bi-map', 'Karte'],
-        '/settings' => ['bi-gear', 'Einstellungen'],
-    ]
-    : (!empty($publicNav) ? ['/checkins' => ['bi-list-ul', 'Verlauf'], '/map' => ['bi-map', 'Karte']] : []);
 $current = $currentPath ?? '/';
+$showNav = $loggedIn || !empty($publicNav);
 $home = $loggedIn || empty($publicNav) ? '/' : '/checkins';
+$here = static fn (string $path): string => $current === $path ? ' aria-current="page"' : '';
 ?>
 <!doctype html>
 <html lang="de">
 <head>
 <?= $view->partial('partials/head', get_defined_vars()) ?>
 </head>
-<body class="d-flex flex-column min-vh-100">
-<nav class="navbar navbar-expand-md bg-body-tertiary border-bottom sticky-top">
-    <div class="container">
-        <a class="navbar-brand fw-semibold" href="<?= e($home) ?>"><i class="bi bi-pin-map-fill text-primary"></i> <?= e(App\App::NAME) ?></a>
-        <?php if ($nav !== []): ?>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-                    aria-controls="mainNav" aria-expanded="false" aria-label="Navigation umschalten">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav me-auto">
-                    <?php foreach ($nav as $href => [$icon, $label]): ?>
-                        <li class="nav-item">
-                            <a class="nav-link<?= $current === $href ? ' active' : '' ?>" href="<?= e($href) ?>"
-                               <?= $current === $href ? 'aria-current="page"' : '' ?>>
-                                <i class="bi <?= e($icon) ?>"></i> <?= e($label) ?>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+<body class="sv-body<?= $showNav ? ' sv-body--tabbar' : '' ?>">
+<a class="sv-skip" href="#main">Zum Inhalt</a>
+<header class="sv-header">
+    <div class="sv-header__inner">
+        <a class="sv-brand" href="<?= e($home) ?>"><?= e(App\App::NAME) ?></a>
+        <?php if ($showNav): ?>
+            <nav class="sv-topnav" aria-label="Hauptnavigation">
                 <?php if ($loggedIn): ?>
-                    <form method="post" action="/logout" class="d-flex">
-                        <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
-                        <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-box-arrow-right"></i> Abmelden</button>
-                    </form>
-                <?php else: ?>
-                    <a class="btn btn-outline-secondary btn-sm" href="/login"><i class="bi bi-box-arrow-in-right"></i> Anmelden</a>
+                    <a class="sv-topnav__checkin" href="/"<?= $here('/') ?>>
+                        <span class="sv-topnav__stamp" aria-hidden="true"><i class="bi bi-geo-alt"></i></span>
+                        Einchecken
+                    </a>
                 <?php endif; ?>
-            </div>
+                <a class="sv-topnav__link" href="/checkins"<?= $here('/checkins') ?>><i class="bi bi-list-ul" aria-hidden="true"></i> Verlauf</a>
+                <a class="sv-topnav__link" href="/map"<?= $here('/map') ?>><i class="bi bi-map" aria-hidden="true"></i> Karte</a>
+            </nav>
+        <?php endif; ?>
+        <?php if ($loggedIn): ?>
+            <a class="sv-gear" href="/settings" aria-label="Einstellungen"<?= $here('/settings') ?>><i class="bi bi-gear" aria-hidden="true"></i></a>
+        <?php elseif ($showNav): ?>
+            <a class="sv-gear" href="/login" aria-label="Anmelden"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i></a>
         <?php endif; ?>
     </div>
-</nav>
-<?php if (!empty($fullBleed)): ?>
-<main class="main-full flex-grow-1">
-    <div class="container"><?= $view->partial('partials/flash', get_defined_vars()) ?></div>
-    <?= $content ?>
-</main>
-<?php else: ?>
-<main class="container py-3 flex-grow-1">
+</header>
+<main id="main" class="sv-main<?= !empty($fullBleed) ? ' sv-main--full' : '' ?>">
     <?= $view->partial('partials/flash', get_defined_vars()) ?>
     <?= $content ?>
 </main>
-<?php endif; ?>
 <?= $view->partial('partials/footer', get_defined_vars()) ?>
+<?php if ($showNav): ?>
+    <nav class="sv-tabbar" aria-label="Hauptnavigation">
+        <a class="sv-tabbar__link" href="/checkins"<?= $here('/checkins') ?>><i class="bi bi-list-ul" aria-hidden="true"></i><span>Verlauf</span></a>
+        <?php if ($loggedIn): ?>
+            <a class="sv-tabbar__stamp" href="/" aria-label="Einchecken"<?= $here('/') ?>><i class="bi bi-geo-alt" aria-hidden="true"></i></a>
+        <?php endif; ?>
+        <a class="sv-tabbar__link" href="/map"<?= $here('/map') ?>><i class="bi bi-map" aria-hidden="true"></i><span>Karte</span></a>
+    </nav>
+<?php endif; ?>
 <?= $view->partial('partials/scripts', get_defined_vars()) ?>
 </body>
 </html>

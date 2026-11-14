@@ -8,6 +8,12 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Hinzugefügt
+- **Neues Standard-Design „Stempelheft“** (`public/assets/css/core.css`): Bricolage Grotesque, Tomatenrot und Sonnengelb, kräftige Ränder, keine Schatten. Mit Nachtfarben, wenn das System auf dunkel steht.
+  - Mobil: schwebende Leiste unten mit Verlauf, Check-in als Stempel-Knopf und Karte. Desktop: Navigation oben mit „Einchecken“ als roter Knopf.
+  - Check-in: gelber Suchblock „Wo steckst du?“, Orte als Karten mit der Entfernung als Stempel (pro Ort fest gedreht), Hinweis „schon gestempelt“. Auf dem Desktop zweispaltig mit der Spalte „Zuletzt“.
+  - Verlauf: Gesamtzahl als Sticker, Tage als Textmarker, Stift-Symbol bei Einträgen mit Notiz.
+  - Alle Regeln liegen in `@layer core`, Farben, Schriften, Radien und Kartenfarben sind CSS-Variablen. Ein Theme aus `data/themes/` gewinnt damit immer.
+- Die Farbe der Browserleiste (`theme-color`) kommt aus der CSS-Variable `--sv-theme-color`.
 - **Eigene Designs:** CSS-Themes in `data/themes/<name>/` (`theme.css`, optional `map.css` und Schriften). Auswahl in den Einstellungen unter *Darstellung*, Auslieferung über die Route `/themes/…`, die nur `.css`, `.woff2` und `.png` aus dem Theme-Ordner liefert. Themes geben im Kopfkommentar `sv-theme-api` an; passt die Version nicht, zeigen die Einstellungen einen Hinweis.
 - **Projekt-Steckbrief** am Anfang der README, mit den begründeten Abweichungen von den Coding-Regeln: Leaflet (`T-4`), Kartenkacheln direkt von OSM (`D-1`), Vendor-Pfade ohne Version (`T-5`, inzwischen behoben).
 - `SECURITY.md`: Sicherheitslücken vertraulich über „Report a vulnerability“ melden (private Meldungen im Repo eingeschaltet).
@@ -17,6 +23,10 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **Health-Check** unter `/health`: antwortet ohne Login mit `200` und `ok`, auch während Migrationen ausstehen. Der Deploy-Workflow prüft damit, ob die App nach dem Übertragen läuft.
 
 ### Geändert
+- **Abmelden** steht jetzt in den Einstellungen statt in der Navigation, zusammen mit „Auf allen Geräten abmelden“.
+- Verlauf: Statt der ersten Zeile der Notiz zeigt ein Stift-Symbol, dass es eine Notiz gibt. Der Hinweis auf eigene Orte entfällt.
+- Kartenmarker in Akzentfarbe aus `--sv-marker-fill` und `--sv-marker-stroke`, Popups und Tooltips im neuen Look.
+- Offline-Seite in den Farben des neuen Designs.
 - README: Serverpfad, SSH-Host und -Benutzer entfernt. Sie stehen nur noch in den Secrets des Environments `production`.
 - Mitgelieferte Bibliotheken liegen jetzt mit Version im Pfad (`T-5`): `public/assets/vendor/bootstrap-5.3.8/`, `bootstrap-icons-1.13.2/`, `leaflet-1.9.4/`. Die Abweichung ist damit aus dem Steckbrief gestrichen.
 - **Deployment per rsync über SSH statt FTPS.** Neuer Workflow `.github/workflows/deploy.yml`: ruft die CI auf dem gemergten Stand auf, überträgt per rsync mit eigenem Deploy-Schlüssel und fest hinterlegtem Host-Key und ruft danach den Health-Check auf. Zugangsdaten im GitHub-Environment `production`. `ci.yml` läuft nur noch bei Pull Requests und als Aufruf aus dem Deploy.
@@ -24,6 +34,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - README: Abschnitt „Deployment und Updates“ beschreibt Server, Pfad, Health-Check, Zugriff und Rollback. Setup-Code und „Passwort vergessen“ laufen über SFTP statt FTP.
 
 ### Entfernt
+- **Bootstrap** (CSS und JavaScript). Die Oberfläche nutzt nur noch eigenes CSS und die Bootstrap Icons. Der Bestätigungsdialog beim Einchecken ist jetzt ein natives `<dialog>`, „Eigener Ort“ klappt ohne Bootstrap auf.
 - FTPS-Deployment (`SamKirkland/FTP-Deploy-Action`). Die Secrets `FTP_SERVER`, `FTP_USERNAME` und `FTP_PASSWORD` werden nicht mehr gebraucht.
 - `CLAUDE.md`: Das öffentliche Repo enthält keine Anweisungsdateien für KI-Assistenten. `.gitignore` schließt `CLAUDE.md` und `CLAUDE.local.md` aus.
 

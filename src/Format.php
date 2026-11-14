@@ -24,6 +24,31 @@ final class Format
         );
     }
 
+    /** "Donnerstag, 29. Oktober", with the year only when it is not the current one */
+    public static function dayInYear(\DateTimeInterface $date, ?\DateTimeInterface $now = null): string
+    {
+        $day = self::day($date);
+        return self::isCurrentYear($date, $now) ? substr($day, 0, -5) : $day;
+    }
+
+    /** "Do, 29. Oktober", with the year only when it is not the current one */
+    public static function shortDay(\DateTimeInterface $date, ?\DateTimeInterface $now = null): string
+    {
+        return sprintf(
+            '%s, %d. %s%s',
+            mb_substr(self::DAYS[(int) $date->format('w')], 0, 2),
+            (int) $date->format('j'),
+            self::MONTHS[(int) $date->format('n') - 1],
+            self::isCurrentYear($date, $now) ? '' : ' ' . $date->format('Y'),
+        );
+    }
+
+    private static function isCurrentYear(\DateTimeInterface $date, ?\DateTimeInterface $now): bool
+    {
+        $now ??= new \DateTimeImmutable('now', $date->getTimezone());
+        return $date->format('Y') === $now->format('Y');
+    }
+
     /** "29.10.2026, 14:05" */
     public static function dateTime(\DateTimeInterface $date): string
     {
