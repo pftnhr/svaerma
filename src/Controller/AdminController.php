@@ -39,7 +39,7 @@ final class AdminController extends Controller
             $this->app->log($e);
             $this->flash('danger', 'Migration fehlgeschlagen, Änderungen wurden zurückgerollt. Details stehen in data/logs/error.log.');
         }
-        return $this->redirect('/settings#system');
+        return $this->redirect(SettingsController::sectionUrl('system'));
     }
 
     /** @param array<string, string> $params */
@@ -47,7 +47,7 @@ final class AdminController extends Controller
     {
         $file = $this->app->backup()->create('manual');
         $this->flash('success', 'Backup erstellt: ' . basename($file));
-        return $this->redirect('/settings#system');
+        return $this->redirect(SettingsController::sectionUrl('system'));
     }
 
     /**
@@ -97,6 +97,6 @@ final class AdminController extends Controller
                 $this->flash('danger', sprintf('%s: %s (%d ms)', $name, $e->getMessage(), (microtime(true) - $start) * 1000));
             }
         }
-        return $this->redirect('/settings#system');
+        return $this->redirect(SettingsController::sectionUrl('system'));
     }
 }

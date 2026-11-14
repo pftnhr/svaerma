@@ -1,0 +1,8 @@
+/* Loaded only on pages with a map, after theme.css. */
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+}
+
+.leaflet-container .leaflet-control-attribution {
+  background: rgb(15 16 18 / 0.85);
+}

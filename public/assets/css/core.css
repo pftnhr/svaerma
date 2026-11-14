@@ -1307,6 +1307,95 @@
     gap: 16px;
   }
 
+  .sv-settings__count { font-weight: 600; }
+  .sv-settings__group { margin-bottom: 8px; }
+
+  /* Accordion: native <details name="settings">, one section open at a time. */
+  .sv-accordion {
+    border: var(--sv-border);
+    border-radius: var(--sv-radius-l);
+    background: var(--sv-surface);
+    overflow: hidden;
+  }
+
+  .sv-acc + .sv-acc { border-top: var(--sv-border-width) dashed var(--sv-line); }
+
+  .sv-acc__head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 72px;
+    padding: 12px 16px;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .sv-acc__head::-webkit-details-marker { display: none; }
+  .sv-acc__head::marker { content: ""; }
+
+  .sv-acc__head:focus-visible {
+    outline-offset: -4px;
+    border-radius: var(--sv-radius-l);
+  }
+
+  .sv-acc__icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--sv-radius-m);
+    color: var(--sv-ink);
+    font-size: 20px;
+  }
+
+  .sv-acc__icon--1 { background: var(--sv-tint-1); }
+  .sv-acc__icon--2 { background: var(--sv-tint-2); }
+  .sv-acc__icon--3 { background: var(--sv-tint-3); }
+
+  .sv-acc__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .sv-acc__title {
+    font-family: var(--sv-font-head);
+    font-size: 20px;
+    font-weight: var(--sv-head-weight);
+    font-variation-settings: "opsz" var(--sv-head-opsz);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .sv-acc__status {
+    overflow: hidden;
+    color: var(--sv-muted);
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sv-acc__chevron {
+    flex: none;
+    font-size: 18px;
+    transition: transform 0.15s ease;
+  }
+
+  .sv-acc[open] > .sv-acc__head .sv-acc__chevron { transform: rotate(180deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sv-acc__chevron { transition: none; }
+  }
+
+  .sv-acc__body {
+    padding: 4px 16px 20px;
+  }
+
+  .sv-acc__body h3 { font-size: 17px; }
+
   .sv-settings__logout {
     display: grid;
     justify-items: center;

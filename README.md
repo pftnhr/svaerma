@@ -77,6 +77,7 @@ migrations/    nummerierte Migrationen 001_….php
 bin/           CLI-Skripte (setup, migrate, import-swarm) für die lokale Nutzung
 tests/         PHPUnit
 e2e/           Browser-Tests (Playwright) für public/assets/js
+docs/          Theming-Anleitung und Beispiel-Theme (wird nicht deployt)
 ```
 
 ## Installation
@@ -363,7 +364,7 @@ Ausgewählt wird das Design in den Einstellungen unter *Darstellung*. Passt `sv-
 
 **Auslieferung:** `data/` bleibt gesperrt. Die Dateien liefert die Route `/themes/<name>/<datei>` aus, auch ohne Login, weil die Login-Seite das Design ebenfalls braucht. Sie liefert nur `.css`, `.woff2` und `.png`, nur aus dem jeweiligen Ordner und höchstens eine Ebene tief. Ordnernamen bestehen aus Kleinbuchstaben, Ziffern und `-`. Fremde Server kann ein Design nicht einbinden, die Content Security Policy lässt Stylesheets, Schriften und Bilder nur vom eigenen Server zu (Kartenkacheln ausgenommen).
 
-Welche CSS-Variablen und Klassen ein Design überschreiben kann, steht ab Version 0.9.0 in `docs/THEMING.md`.
+Welche CSS-Variablen und Klassen ein Design überschreiben kann, steht in [`docs/THEMING.md`](docs/THEMING.md). Ein vollständiges Beispiel-Theme mit eigener Schrift liegt in [`docs/themes/nachtschwarm/`](docs/themes/nachtschwarm/). Zum Ausprobieren den Ordner nach `data/themes/` kopieren.
 
 ## PWA (Homescreen)
 

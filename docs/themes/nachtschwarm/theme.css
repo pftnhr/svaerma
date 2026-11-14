@@ -1,0 +1,85 @@
+/*
+ * Name: Nachtschwarm
+ * Author: svaerma
+ * Version: 1.0
+ * sv-theme-api: 1
+ *
+ * Example theme: always dark, lime accent, Space Grotesk.
+ * Install: copy this folder to data/themes/nachtschwarm/ and choose it in the settings.
+ * Docs: docs/THEMING.md
+ */
+
+/* Fonts live in this theme's own fonts/ folder (relative URLs, served by /themes/…). */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("fonts/space-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("fonts/space-grotesk-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* One :root block without a media query: the theme is dark in both system modes,
+   because unlayered rules beat the dark variant inside core.css. */
+:root {
+  color-scheme: dark;
+
+  --sv-bg: #0F1012;
+  --sv-surface: #1A1C20;
+  --sv-ink: #F2F2EE;
+  --sv-muted: #9A9DA3;
+  --sv-placeholder: #7E8188;
+  --sv-line: #2A2D33;
+  --sv-accent: #C8FF4D;
+  --sv-on-accent: #0F1012;
+  --sv-highlight: #C8FF4D;
+  --sv-on-highlight: #0F1012;
+  --sv-link: #C8FF4D;
+  --sv-link-hover: #F2F2EE;
+  --sv-tint-1: #2B3518;
+  --sv-tint-2: #35261F;
+  --sv-tint-3: #1F2838;
+  --sv-success: #9BE7A8;
+  --sv-success-bg: #15291A;
+  --sv-danger: #FF9A8F;
+  --sv-danger-bg: #3A1714;
+  --sv-warning-bg: #33300F;
+  --sv-info-bg: #18233A;
+  --sv-backdrop: rgb(0 0 0 / 0.65);
+
+  --sv-nav-bg: #1A1C20;
+  --sv-nav-fg: #9A9DA3;
+  --sv-nav-active: #C8FF4D;
+
+  --sv-font-head: "Space Grotesk", system-ui, sans-serif;
+  --sv-font-body: "Space Grotesk", system-ui, sans-serif;
+  --sv-head-weight: 700;
+  --sv-brand-weight: 700;
+
+  /* Softer frames than the default ink border */
+  --sv-border: 2px solid #34373E;
+
+  --sv-map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+  --sv-marker-fill: #C8FF4D;
+  --sv-marker-stroke: #0F1012;
+  --sv-theme-color: #0F1012;
+}
+
+/* Classes can be restyled too: straight distance stamps instead of tilted ones. */
+.sv-stamp {
+  border-style: solid;
+  transform: none;
+}
+
+.sv-tabbar {
+  border: var(--sv-border);
+}

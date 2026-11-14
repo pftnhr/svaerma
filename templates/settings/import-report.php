@@ -7,7 +7,7 @@ $title = 'Swarm-Import';
 ?>
 <div class="sv-narrow sv-stack">
     <div>
-        <a class="sv-back" href="/settings#import"><i class="bi bi-chevron-left" aria-hidden="true"></i> Einstellungen</a>
+        <a class="sv-back" href="/settings?open=import#import"><i class="bi bi-chevron-left" aria-hidden="true"></i> Einstellungen</a>
         <h1>Swarm-Import<?= $report['dry_run'] ? ' – Probelauf' : '' ?></h1>
     </div>
 
@@ -50,7 +50,7 @@ $title = 'Swarm-Import';
         <p class="sv-mb-0">Passt alles? Dann die Dateien noch einmal auswählen und den Probelauf abwählen.</p>
     <?php endif; ?>
     <div class="sv-actions">
-        <a class="sv-btn sv-btn--primary" href="/settings#import">Zurück</a>
+        <a class="sv-btn sv-btn--primary" href="/settings?open=import#import">Zurück</a>
         <?php if (!$report['dry_run'] && $report['imported'] > 0): ?>
             <a class="sv-btn" href="/checkins">Zum Verlauf</a>
         <?php endif; ?>

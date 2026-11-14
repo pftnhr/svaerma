@@ -19,7 +19,7 @@ final class TransferController extends Controller
         $uploads = $this->uploads();
         if (is_string($uploads)) {
             $this->flash('danger', $uploads);
-            return $this->redirect('/settings#import');
+            return $this->redirect(SettingsController::sectionUrl('import'));
         }
 
         $report = $this->app->swarmImporter()->import($uploads, $this->request->input('dry_run') === '1');

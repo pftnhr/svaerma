@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Settings accordion: only one section open. Browsers that know <details name>
+  // do this themselves; this is the fallback for older ones.
+  document.querySelectorAll('details[name]').forEach(function (details) {
+    details.addEventListener('toggle', function () {
+      if (!details.open) return;
+      document.querySelectorAll('details[name="' + details.getAttribute('name') + '"]').forEach(function (other) {
+        if (other !== details && other.open) other.open = false;
+      });
+    });
+  });
+
+  // A link to /settings#api opens that section.
+  if (location.hash.length > 1) {
+    var target = document.getElementById(location.hash.slice(1));
+    if (target && target.tagName === 'DETAILS') target.open = true;
+  }
+
   // PWA: register the service worker (served by PHP at /sw.js, see PwaController).
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function () { /* not critical */ });

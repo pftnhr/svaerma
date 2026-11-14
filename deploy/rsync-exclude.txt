@@ -12,6 +12,7 @@
 /tests/
 /e2e/
 /shortcuts/
+/docs/
 /vendor/
 /node_modules/
 /test-results/

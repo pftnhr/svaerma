@@ -251,6 +251,7 @@ test('service worker serves the offline page without network', async ({ page, co
 test('new API token is selected on focus for copying', async ({ page }) => {
   await login(page);
   await page.goto('/settings');
+  await page.locator('#api summary').click();
   await page.fill('form[action="/settings/tokens"] input[name=name]', 'E2E');
   await page.locator('form[action="/settings/tokens"] button').click();
   const field = page.locator('[data-select-on-focus]');
@@ -295,4 +296,24 @@ test.describe('on a phone', () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   });
+});
+
+test('settings: one section open at a time, each saves on its own', async ({ page }) => {
+  await login(page);
+  await page.goto('/settings');
+  await expect(page.locator('details.sv-acc[open]')).toHaveCount(0);
+
+  await page.locator('#checkin summary').click();
+  await expect(page.locator('#nearby_radius')).toBeVisible();
+  await page.locator('#public summary').click();
+  await expect(page.locator('#public_enabled')).toBeVisible();
+  await expect(page.locator('#nearby_radius')).toBeHidden();
+  await expect(page.locator('details.sv-acc[open]')).toHaveCount(1);
+
+  await page.locator('#public_delay_hours').fill('3');
+  await page.locator('#public').getByRole('button', { name: 'Speichern' }).click();
+  await expect(page).toHaveURL(/\/settings\?open=public#public$/);
+  await expect(page.locator('.sv-alert--success')).toContainText('gespeichert');
+  await expect(page.locator('#public_delay_hours')).toHaveValue('3');
+  await expect(page.locator('#public .sv-acc__status')).toContainText(/Aus|3 Std\./);
 });

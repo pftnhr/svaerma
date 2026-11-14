@@ -39,7 +39,7 @@ use PDO;
 final class App
 {
     public const NAME = 'svaerma';
-    public const VERSION = '0.8.4';
+    public const VERSION = '0.9.0';
     /** GitHub repository: footer link and update check. */
     public const REPOSITORY = 'tgigold/svaerma';
     public const DEFAULT_RADIUS = 150;

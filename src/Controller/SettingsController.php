@@ -15,6 +15,11 @@ use App\Service\Themes;
  */
 final class SettingsController extends Controller
 {
+    /** Accordion sections with a form posted to /settings. */
+    public const FORM_SECTIONS = ['checkin', 'public', 'services', 'design'];
+    /** All accordion sections, in page order. */
+    public const SECTIONS = ['checkin', 'public', 'services', 'design', 'api', 'import', 'system'];
+
     /** @param array<string, string> $params */
     public function index(array $params): Response
     {
@@ -23,7 +28,10 @@ final class SettingsController extends Controller
         $dbFile = (string) $this->app->config->get('db_path');
         $key = (string) $settings->get('geoapify_key', '');
 
+        $open = $this->request->query['open'] ?? '';
         return $this->render('settings/index', [
+            'open' => is_string($open) && in_array($open, self::SECTIONS, true) ? $open : null,
+            'checkinCount' => $this->app->checkins()->count(),
             'radius' => $this->app->nearbyRadius(),
             'minRadius' => Overpass::MIN_RADIUS,
             'maxRadius' => Overpass::MAX_RADIUS,
@@ -61,83 +69,111 @@ final class SettingsController extends Controller
         ]);
     }
 
-    /** @param array<string, string> $params */
+    /**
+     * Saves one accordion section (hidden field "section") or, without it, all of them.
+     * Fields of other sections are left alone: a form only contains its own fields,
+     * and an unchecked checkbox must not switch off something in another section.
+     *
+     * @param array<string, string> $params
+     */
     public function save(array $params): Response
     {
         $in = $this->request;
+        $section = $in->input('section');
+        if ($section !== '' && !in_array($section, self::FORM_SECTIONS, true)) {
+            return $this->app->error($this->request, 400);
+        }
+        $saves = static fn (string $name): bool => $section === '' || $section === $name;
         $errors = [];
+        $settings = $this->app->settings();
+        $writes = [];
 
-        $radius = filter_var($in->input('nearby_radius'), FILTER_VALIDATE_INT, [
-            'options' => ['min_range' => Overpass::MIN_RADIUS, 'max_range' => Overpass::MAX_RADIUS],
-        ]);
-        if ($radius === false) {
-            $errors[] = sprintf('Der Umkreis muss zwischen %d und %d m liegen.', Overpass::MIN_RADIUS, Overpass::MAX_RADIUS);
+        if ($saves('checkin')) {
+            $radius = filter_var($in->input('nearby_radius'), FILTER_VALIDATE_INT, [
+                'options' => ['min_range' => Overpass::MIN_RADIUS, 'max_range' => Overpass::MAX_RADIUS],
+            ]);
+            if ($radius === false) {
+                $errors[] = sprintf('Der Umkreis muss zwischen %d und %d m liegen.', Overpass::MIN_RADIUS, Overpass::MAX_RADIUS);
+            }
+            $writes['nearby_radius'] = (string) $radius;
         }
 
-        $limit = $in->input('public_limit');
-        if ($limit !== '' && filter_var($limit, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
-            $errors[] = 'Die Anzahl öffentlicher Check-ins muss eine Zahl ab 1 sein (leer = alle).';
+        if ($saves('public')) {
+            $limit = $in->input('public_limit');
+            if ($limit !== '' && filter_var($limit, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+                $errors[] = 'Die Anzahl öffentlicher Check-ins muss eine Zahl ab 1 sein (leer = alle).';
+            }
+            $delay = filter_var($in->input('public_delay_hours', '0'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 8760]]);
+            if ($delay === false) {
+                $errors[] = 'Die Verzögerung muss zwischen 0 und 8760 Stunden liegen.';
+            }
+            $writes += [
+                'public_enabled' => $in->input('public_enabled') === '1' ? '1' : '0',
+                'public_limit' => $limit,
+                'public_delay_hours' => (string) $delay,
+                'public_notes' => $in->input('public_notes') === '1' ? '1' : '0',
+                'public_manual' => $in->input('public_manual') === '1' ? '1' : '0',
+            ];
         }
 
-        $delay = filter_var($in->input('public_delay_hours', '0'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 8760]]);
-        if ($delay === false) {
-            $errors[] = 'Die Verzögerung muss zwischen 0 und 8760 Stunden liegen.';
-        }
-
-        $key = $in->input('geoapify_key');
-        if ($key !== '' && !preg_match('/^[A-Za-z0-9]{16,64}$/', $key)) {
-            $errors[] = 'Der Geoapify-Key sieht ungültig aus.';
-        }
-
-        $overpassChKey = $in->input('overpass_ch_key');
-        if ($overpassChKey !== '' && !preg_match('/^[A-Za-z0-9_-]{16,128}$/', $overpassChKey)) {
-            $errors[] = 'Der overpass.ch-Key sieht ungültig aus.';
-        }
-
-        $extra = $this->extraUrls($in->input('overpass_extra_urls'));
-        foreach ($extra as $url) {
-            if (!preg_match('#^https://[a-z0-9.-]+(:\d+)?(/[^\s]*)?$#i', $url)) {
-                $errors[] = "Ungültiger Overpass-Endpunkt: $url (erwartet z. B. https://example.org/api/interpreter)";
-            } elseif (!IpRange::hostIsPublic((string) parse_url($url, PHP_URL_HOST))) {
-                // The server must not be pointed at its own network (localhost, LAN, cloud metadata).
-                $errors[] = "Overpass-Endpunkt $url ist nicht erreichbar oder zeigt auf eine interne Adresse.";
+        if ($saves('services')) {
+            $key = $in->input('geoapify_key');
+            if ($key !== '' && !preg_match('/^[A-Za-z0-9]{16,64}$/', $key)) {
+                $errors[] = 'Der Geoapify-Key sieht ungültig aus.';
+            }
+            $overpassChKey = $in->input('overpass_ch_key');
+            if ($overpassChKey !== '' && !preg_match('/^[A-Za-z0-9_-]{16,128}$/', $overpassChKey)) {
+                $errors[] = 'Der overpass.ch-Key sieht ungültig aus.';
+            }
+            $extra = $this->extraUrls($in->input('overpass_extra_urls'));
+            foreach ($extra as $url) {
+                if (!preg_match('#^https://[a-z0-9.-]+(:\d+)?(/[^\s]*)?$#i', $url)) {
+                    $errors[] = "Ungültiger Overpass-Endpunkt: $url (erwartet z. B. https://example.org/api/interpreter)";
+                } elseif (!IpRange::hostIsPublic((string) parse_url($url, PHP_URL_HOST))) {
+                    // The server must not be pointed at its own network (localhost, LAN, cloud metadata).
+                    $errors[] = "Overpass-Endpunkt $url ist nicht erreichbar oder zeigt auf eine interne Adresse.";
+                }
+            }
+            $writes['overpass_extra_urls'] = implode("\n", $extra);
+            if ($in->input('overpass_ch_remove') === '1') {
+                $writes['overpass_ch_key'] = '';
+            } elseif ($overpassChKey !== '') {
+                $writes['overpass_ch_key'] = $overpassChKey;
+            }
+            if ($in->input('geoapify_remove') === '1') {
+                $writes['geoapify_key'] = '';
+            } elseif ($key !== '') {
+                $writes['geoapify_key'] = $key;
             }
         }
 
-        $theme = $in->input('theme');
-        if ($theme !== '' && $this->app->themes()->find($theme) === null) {
-            $errors[] = 'Dieses Design gibt es nicht (mehr) in data/themes/.';
+        if ($saves('design')) {
+            $theme = $in->input('theme');
+            if ($theme !== '' && $this->app->themes()->find($theme) === null) {
+                $errors[] = 'Dieses Design gibt es nicht (mehr) in data/themes/.';
+            }
+            $writes['theme'] = $theme;
         }
 
+        $back = $section === '' ? '/settings' : self::sectionUrl($section);
         if ($errors !== []) {
             foreach ($errors as $error) {
                 $this->flash('danger', $error);
             }
-            return $this->redirect('/settings');
+            return $this->redirect($back);
         }
 
-        $settings = $this->app->settings();
-        $settings->set('nearby_radius', (string) $radius);
-        $settings->set('public_enabled', $in->input('public_enabled') === '1' ? '1' : '0');
-        $settings->set('public_limit', $limit);
-        $settings->set('public_delay_hours', (string) $delay);
-        $settings->set('public_notes', $in->input('public_notes') === '1' ? '1' : '0');
-        $settings->set('public_manual', $in->input('public_manual') === '1' ? '1' : '0');
-        $settings->set('overpass_extra_urls', implode("\n", $extra));
-        $settings->set('theme', $theme);
-        if ($in->input('overpass_ch_remove') === '1') {
-            $settings->set('overpass_ch_key', '');
-        } elseif ($overpassChKey !== '') {
-            $settings->set('overpass_ch_key', $overpassChKey);
+        foreach ($writes as $name => $value) {
+            $settings->set($name, $value);
         }
-        if ($in->input('geoapify_remove') === '1') {
-            $settings->set('geoapify_key', '');
-        } elseif ($key !== '') {
-            $settings->set('geoapify_key', $key);
-        }
-
         $this->flash('success', 'Einstellungen gespeichert.');
-        return $this->redirect('/settings');
+        return $this->redirect($back);
+    }
+
+    /** Settings page with one accordion section open. */
+    public static function sectionUrl(string $section): string
+    {
+        return '/settings?open=' . $section . '#' . $section;
     }
 
     /** @return list<string> one URL per line, empty lines dropped */
@@ -152,11 +188,11 @@ final class SettingsController extends Controller
         $name = mb_substr($this->request->input('name'), 0, 100);
         if ($name === '') {
             $this->flash('danger', 'Bitte gib dem Token einen Namen, z. B. „iPhone-Kurzbefehl“.');
-            return $this->redirect('/settings#api');
+            return $this->redirect(self::sectionUrl('api'));
         }
         // Shown exactly once on the next page view, never stored in plain text.
         $this->app->session()->set('new_token', $this->app->apiTokens()->create($name));
-        return $this->redirect('/settings#api');
+        return $this->redirect(self::sectionUrl('api'));
     }
 
     /** @param array<string, string> $params */
@@ -164,7 +200,7 @@ final class SettingsController extends Controller
     {
         $this->app->apiTokens()->revoke((int) $params['id']);
         $this->flash('success', 'Token widerrufen.');
-        return $this->redirect('/settings#api');
+        return $this->redirect(self::sectionUrl('api'));
     }
 
     /** @param array<string, string> $params */

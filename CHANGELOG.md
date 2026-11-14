@@ -7,7 +7,14 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-14
+
+Neues Aussehen „Stempelheft“ und eigene Designs per CSS.
+
 ### Hinzugefügt
+- **Einstellungen als Akkordeon** in zwei Gruppen („Check-ins“, „Daten & System“). Jeder Bereich zeigt zugeklappt eine Kurzinfo und hat einen eigenen Speichern-Knopf. Gespeichert werden nur die Felder dieses Bereichs. Immer nur ein Bereich ist offen (`<details name>`, funktioniert ohne JavaScript). Nach dem Speichern öffnet sich der Bereich wieder.
+- **`docs/THEMING.md`:** Anleitung für eigene Designs mit allen Variablen und ihren Standardwerten, den stabilen Klassen, den Karten-Variablen und den Regeln für künftige Änderungen.
+- **Beispiel-Theme „Nachtschwarm“** in `docs/themes/nachtschwarm/`: dunkel, Akzent in Limette, Schrift Space Grotesk (OFL) im eigenen `fonts/`-Ordner.
 - **Neues Standard-Design „Stempelheft“** (`public/assets/css/core.css`): Bricolage Grotesque, Tomatenrot und Sonnengelb, kräftige Ränder, keine Schatten. Mit Nachtfarben, wenn das System auf dunkel steht.
   - Mobil: schwebende Leiste unten mit Verlauf, Check-in als Stempel-Knopf und Karte. Desktop: Navigation oben mit „Einchecken“ als roter Knopf.
   - Check-in: gelber Suchblock „Wo steckst du?“, Orte als Karten mit der Entfernung als Stempel (pro Ort fest gedreht), Hinweis „schon gestempelt“. Auf dem Desktop zweispaltig mit der Spalte „Zuletzt“.
@@ -23,6 +30,8 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **Health-Check** unter `/health`: antwortet ohne Login mit `200` und `ok`, auch während Migrationen ausstehen. Der Deploy-Workflow prüft damit, ob die App nach dem Übertragen läuft.
 
 ### Geändert
+- App-Icon und Manifest-Farbe in Tomatenrot statt Blau.
+- Nach Aktionen in den Einstellungen (Token erzeugen, Backup, Verbindungstest, Import) öffnet sich direkt der passende Bereich (`/settings?open=…`).
 - **Abmelden** steht jetzt in den Einstellungen statt in der Navigation, zusammen mit „Auf allen Geräten abmelden“.
 - Verlauf: Statt der ersten Zeile der Notiz zeigt ein Stift-Symbol, dass es eine Notiz gibt. Der Hinweis auf eigene Orte entfällt.
 - Kartenmarker in Akzentfarbe aus `--sv-marker-fill` und `--sv-marker-stroke`, Popups und Tooltips im neuen Look.
@@ -241,7 +250,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/tgigold/svaerma/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/tgigold/svaerma/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/tgigold/svaerma/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/tgigold/svaerma/compare/v0.8.1...v0.8.2
