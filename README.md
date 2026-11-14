@@ -19,6 +19,7 @@ Live unter `https://checkin.gigold.me`.
 - [Migrationen](#migrationen)
 - [Backup](#backup)
 - [Lokale Entwicklung](#lokale-entwicklung)
+- [Coding-Regeln](#coding-regeln)
 - [Ein neues Feature hinzufügen](#ein-neues-feature-hinzufügen)
 - [Sicherheit](#sicherheit)
 
@@ -396,6 +397,10 @@ npm run e2e
 ```
 
 Node ist nur ein Dev-Werkzeug, die App selbst läuft weiterhin ohne. Der Pfad zur Config lässt sich über die Umgebungsvariable `APP_CONFIG` umbiegen, das nutzen die Tests.
+
+## Coding-Regeln
+
+Für svaerma gelten die projektübergreifenden [Coding-Regeln](https://github.com/tgigold/coding-regeln). Regeln dort haben feste Nummern (z. B. `H-11`), auf die Pull Requests und Reviews verweisen. Wo svaerma bewusst abweicht, steht es hier in der README mit Begründung. Widersprechen sich Regeln, README und Code, wird der Widerspruch benannt und geklärt, statt still eine Seite zu wählen.
 
 ## Ein neues Feature hinzufügen
 
