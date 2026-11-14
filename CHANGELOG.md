@@ -8,7 +8,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Hinzugefügt
-- **Projekt-Steckbrief** am Anfang der README, mit den begründeten Abweichungen von den Coding-Regeln: Leaflet (`T-4`), Kartenkacheln direkt von OSM (`D-1`), Vendor-Pfade ohne Version (`T-5`, wird noch behoben).
+- **Projekt-Steckbrief** am Anfang der README, mit den begründeten Abweichungen von den Coding-Regeln: Leaflet (`T-4`), Kartenkacheln direkt von OSM (`D-1`), Vendor-Pfade ohne Version (`T-5`, inzwischen behoben).
 - `SECURITY.md`: Sicherheitslücken vertraulich über „Report a vulnerability“ melden (private Meldungen im Repo eingeschaltet).
 - `THIRD-PARTY-LICENSES.md` für Bootstrap, Bootstrap Icons und Leaflet.
 - `.editorconfig`: UTF-8, LF, 4 Leerzeichen für PHP, 2 für JS, CSS, JSON und YAML.
@@ -16,6 +16,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **Health-Check** unter `/health`: antwortet ohne Login mit `200` und `ok`, auch während Migrationen ausstehen. Der Deploy-Workflow prüft damit, ob die App nach dem Übertragen läuft.
 
 ### Geändert
+- Mitgelieferte Bibliotheken liegen jetzt mit Version im Pfad (`T-5`): `public/assets/vendor/bootstrap-5.3.8/`, `bootstrap-icons-1.13.2/`, `leaflet-1.9.4/`. Die Abweichung ist damit aus dem Steckbrief gestrichen.
 - **Deployment per rsync über SSH statt FTPS.** Neuer Workflow `.github/workflows/deploy.yml`: ruft die CI auf dem gemergten Stand auf, überträgt per rsync mit eigenem Deploy-Schlüssel und fest hinterlegtem Host-Key und ruft danach den Health-Check auf. Zugangsdaten im GitHub-Environment `production`. `ci.yml` läuft nur noch bei Pull Requests und als Aufruf aus dem Deploy.
 - Was auf dem Server unangetastet bleibt (`config/config.php`, `data/` und die dort deaktivierte Fallback-`.htaccess` im Projektverzeichnis), steht jetzt in `deploy/rsync-exclude.txt`.
 - README: Abschnitt „Deployment und Updates“ beschreibt Server, Pfad, Health-Check, Zugriff und Rollback. Setup-Code und „Passwort vergessen“ laufen über SFTP statt FTP.

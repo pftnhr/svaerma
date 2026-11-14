@@ -4,8 +4,8 @@ svaerma selbst steht unter der [Unlicense](LICENSE). Diese Bibliotheken werden u
 
 | Bibliothek | Version | Lizenz | Pfad |
 |---|---|---|---|
-| [Bootstrap](https://getbootstrap.com/) | 5.3.8 | MIT | `public/assets/vendor/bootstrap/LICENSE` |
-| [Bootstrap Icons](https://icons.getbootstrap.com/) | 1.13.2 | MIT | `public/assets/vendor/bootstrap-icons/LICENSE` |
-| [Leaflet](https://leafletjs.com/) | 1.9.4 | BSD 2-Clause | `public/assets/vendor/leaflet/LICENSE` |
+| [Bootstrap](https://getbootstrap.com/) | 5.3.8 | MIT | `public/assets/vendor/bootstrap-5.3.8/LICENSE` |
+| [Bootstrap Icons](https://icons.getbootstrap.com/) | 1.13.2 | MIT | `public/assets/vendor/bootstrap-icons-1.13.2/LICENSE` |
+| [Leaflet](https://leafletjs.com/) | 1.9.4 | BSD 2-Clause | `public/assets/vendor/leaflet-1.9.4/LICENSE` |
 
 Kartendaten und -kacheln: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende, Daten unter der [ODbL](https://opendatacommons.org/licenses/odbl/). Die Karte zeigt den Hinweis direkt an.

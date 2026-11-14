@@ -11,12 +11,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="<?= e(App\App::NAME) ?>">
 <title><?= e(isset($title) ? $title . ' · ' . App\App::NAME : App\App::NAME) ?></title>
-<link rel="stylesheet" href="<?= e(asset('vendor/bootstrap/bootstrap.min.css')) ?>"
+<link rel="stylesheet" href="<?= e(asset('vendor/bootstrap-5.3.8/bootstrap.min.css')) ?>"
       integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB">
-<link rel="stylesheet" href="<?= e(asset('vendor/bootstrap-icons/bootstrap-icons.min.css')) ?>"
+<link rel="stylesheet" href="<?= e(asset('vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css')) ?>"
       integrity="sha384-nWN3KqaaVcbEsCjLSV+2jMjh62Iny/+mN3srM8TZeM8N6aj7eDl5wwYggjAJ4/sJ">
 <?php if (!empty($leaflet)): ?>
-<link rel="stylesheet" href="<?= e(asset('vendor/leaflet/leaflet.css')) ?>"
+<link rel="stylesheet" href="<?= e(asset('vendor/leaflet-1.9.4/leaflet.css')) ?>"
       integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H">
 <?php endif; ?>
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">

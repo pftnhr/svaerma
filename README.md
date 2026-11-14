@@ -26,9 +26,8 @@ Live unter `https://checkin.gigold.me`.
 
 | Regel | Was hier stattdessen gilt | Warum |
 |---|---|---|
-| `T-4` | Leaflet 1.9.4 wird zusätzlich zu Bootstrap und Bootstrap Icons mit ausgeliefert, lokal unter `public/assets/vendor/` | Die Karte ist Kern der App (Einchecken, Verlauf, Detailseiten). Leaflet ist die verbreitete, schlanke Bibliothek dafür und läuft ohne Build und ohne fremde Server. |
+| `T-4` | Leaflet 1.9.4 wird zusätzlich zu Bootstrap und Bootstrap Icons mit ausgeliefert, lokal unter `public/assets/vendor/leaflet-1.9.4/` | Die Karte ist Kern der App (Einchecken, Verlauf, Detailseiten). Leaflet ist die verbreitete, schlanke Bibliothek dafür und läuft ohne Build und ohne fremde Server. |
 | `D-1` | Der Browser lädt Kartenkacheln direkt vom Kachel-Server (`osm.tile_url`, Standard `tile.openstreetmap.org`). Die CSP erlaubt in `img-src` nur diesen Host und seine Subdomains; dank `Referrer-Policy` sieht er nur die Domain, nie den Pfad. | Ohne Karte ist die App nicht nutzbar. Die Kacheln über den eigenen Server zu leiten, bräuchte einen Kachel-Proxy mit Cache auf dem Shared Webspace, mit eigener Last, eigenem Speicherbedarf und eigener Fehlerquelle. |
-| `T-5` | Fremde Dateien liegen unter `public/assets/vendor/<name>/` ohne Version im Pfad; Caches werden über `?v=<App-Version>` erneuert | Noch nicht umgestellt, wird in einem eigenen PR behoben. |
 
 ## Inhalt
 
