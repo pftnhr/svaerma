@@ -1,12 +1,11 @@
 # CLAUDE.md
 
-## CodingRegeln (immer einbeziehen)
+## Coding-Regeln (immer einbeziehen)
 
-Lies zu Beginn jeder Arbeit an diesem Projekt die CodingRegeln und halte dich daran:
-https://recorder.gigold.me/wiki/CodingRegeln
+Für dieses Projekt gelten die Coding-Regeln aus dem Repo [tgigold/coding-regeln](https://github.com/tgigold/coding-regeln), lokal unter `~/Websites/coding_regeln/`. Lies vor der Arbeit die passende Themen-Datei aus dem Wegweiser in deren `README.md`.
 
-- Ist die Seite nicht erreichbar, weise **deutlich** darauf hin (nicht stillschweigend weiterarbeiten) und arbeite ersatzweise nach README (Abschnitte „Sicherheit“ und „Ein neues Feature hinzufügen“) und CHANGELOG.
-- Widersprechen sich Wiki, README und Code, benenne den Widerspruch, statt still eine Seite zu wählen.
+- Ist die lokale Kopie nicht vorhanden, lies die Regeln aus dem GitHub-Repo.
+- Widersprechen sich Regeln, README und Code, benenne den Widerspruch, statt still eine Seite zu wählen.
 
 ## Arbeitsweise in diesem Repo
 
