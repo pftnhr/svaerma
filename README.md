@@ -50,6 +50,8 @@ Live unter `https://checkin.gigold.me`.
 - [Ein neues Feature hinzufügen](#ein-neues-feature-hinzufügen)
 - [Sicherheit](#sicherheit)
 
+Geplante Erweiterungen stehen in der [Roadmap](ROADMAP.md).
+
 ## Anforderungen
 
 - PHP ≥ 8.3 (Zielsystem: 8.5) mit `pdo_sqlite`, `mbstring`, `intl`

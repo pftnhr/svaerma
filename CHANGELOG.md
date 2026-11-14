@@ -7,6 +7,9 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Hinzugefügt
+- `ROADMAP.md` mit den offenen Punkten zur PWA: Manifest-Farben und App-Icon aus dem gewählten Theme, Statusleiste auf iOS.
+
 ## [0.9.0] - 2026-11-14
 
 Neues Aussehen „Stempelheft“ und eigene Designs per CSS.
