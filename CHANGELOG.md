@@ -7,6 +7,9 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Geändert
+- `CLAUDE.md` verweist für die Coding-Regeln jetzt auf das Repo [tgigold/coding-regeln](https://github.com/tgigold/coding-regeln) statt auf die veraltete Wiki-Seite.
+
 ## [0.8.4] - 2026-11-07
 
 ### Hinzugefügt
