@@ -21,3 +21,7 @@ checkins*.json
 /e2e/.run/
 /test-results/
 /playwright-report/
+
+# No instruction files for AI assistants in this public repo (coding rule G-18)
+/CLAUDE.md
+/CLAUDE.local.md

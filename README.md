@@ -400,7 +400,21 @@ Node ist nur ein Dev-Werkzeug, die App selbst läuft weiterhin ohne. Der Pfad zu
 
 ## Coding-Regeln
 
-Für svaerma gelten die projektübergreifenden [Coding-Regeln](https://github.com/tgigold/coding-regeln). Regeln dort haben feste Nummern (z. B. `H-11`), auf die Pull Requests und Reviews verweisen. Wo svaerma bewusst abweicht, steht es hier in der README mit Begründung. Widersprechen sich Regeln, README und Code, wird der Widerspruch benannt und geklärt, statt still eine Seite zu wählen.
+Für svaerma gelten die projektübergreifenden [Coding-Regeln](https://github.com/tgigold/coding-regeln). Regeln dort haben feste Nummern (z. B. `H-11`), auf die Pull Requests und Reviews verweisen. Widersprechen sich Regeln, README und Code, wird der Widerspruch benannt und geklärt, statt still eine Seite zu wählen.
+
+**Arbeitsweise in diesem Repo:**
+
+- Jede Änderung bekommt im selben Commit einen Eintrag in `CHANGELOG.md` unter „Unreleased“, nicht nur Features.
+- Zu jedem Feature gehören Tests mit PHPUnit, und PHPStan muss fehlerfrei durchlaufen. Änderungen am JavaScript brauchen zusätzlich Browser-Tests (`npm run e2e`), siehe [Lokale Entwicklung](#lokale-entwicklung).
+- Bereits ausgerollte Migrationen werden nie geändert, es gibt immer eine neue (siehe [Migrationen](#migrationen)).
+- Das Repo ist öffentlich und enthält keine Anweisungsdateien für KI-Assistenten (`G-18`); `CLAUDE.md` steht deshalb in der `.gitignore`.
+
+**Bekannte Abweichungen von den Regeln.** Sie sind noch nicht entschieden und werden mit dem Projekt-Steckbrief begründet oder behoben:
+
+- **Leaflet** wird mit ausgeliefert, `T-4` erlaubt nur Bootstrap, Bootstrap Icons und Google Fonts. Die Dateien liegen unter `public/assets/vendor/leaflet/` ohne Version im Pfad (`T-5`).
+- **Kartenkacheln** lädt der Browser direkt vom Kachel-Server (`osm.tile_url`, Standard `tile.openstreetmap.org`), `D-1` verlangt, dass der Browser nur den eigenen Server anfragt.
+- **Fallback-Installation** ins Web-Root (siehe [Installation](#fallback-document-root-lässt-sich-nicht-auf-public-setzen)) widerspricht `G-1`. Auf dem Live-Server zeigt das Document Root auf `public/`.
+- **Pflichtdateien** nach `G-2` und `G-4` fehlen: Projekt-Steckbrief am Anfang der README, `SECURITY.md`, `.editorconfig`, `THIRD-PARTY-LICENSES.md`.
 
 ## Ein neues Feature hinzufügen
 
