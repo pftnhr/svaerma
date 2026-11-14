@@ -8,6 +8,7 @@ use App\App;
 use App\Http\IpRange;
 use App\Http\Response;
 use App\Service\Osm\Overpass;
+use App\Service\Themes;
 
 /**
  * Settings and administration on one page (single-user tool).
@@ -37,6 +38,9 @@ final class SettingsController extends Controller
             'overpassChHint' => self::hint((string) $settings->get('overpass_ch_key', '')),
             'overpassExtra' => (string) $settings->get('overpass_extra_urls', ''),
             'overpassConfigured' => $this->app->configuredOverpassEndpoints(),
+            'themes' => $this->app->themes()->all(),
+            'themeSlug' => (string) $settings->get('theme', ''),
+            'themeApi' => Themes::API,
             // Migration 003 may still be pending right after an update.
             'tokens' => in_array('003_api_tokens', $migrator->applied(), true) ? $this->app->apiTokens()->all() : null,
             'newToken' => $this->takeNewToken(),
@@ -100,6 +104,11 @@ final class SettingsController extends Controller
             }
         }
 
+        $theme = $in->input('theme');
+        if ($theme !== '' && $this->app->themes()->find($theme) === null) {
+            $errors[] = 'Dieses Design gibt es nicht (mehr) in data/themes/.';
+        }
+
         if ($errors !== []) {
             foreach ($errors as $error) {
                 $this->flash('danger', $error);
@@ -115,6 +124,7 @@ final class SettingsController extends Controller
         $settings->set('public_notes', $in->input('public_notes') === '1' ? '1' : '0');
         $settings->set('public_manual', $in->input('public_manual') === '1' ? '1' : '0');
         $settings->set('overpass_extra_urls', implode("\n", $extra));
+        $settings->set('theme', $theme);
         if ($in->input('overpass_ch_remove') === '1') {
             $settings->set('overpass_ch_key', '');
         } elseif ($overpassChKey !== '') {

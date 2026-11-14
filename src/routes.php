@@ -11,6 +11,7 @@ use App\Controller\PlaceController;
 use App\Controller\PwaController;
 use App\Controller\SettingsController;
 use App\Controller\SetupController;
+use App\Controller\ThemeController;
 use App\Controller\TransferController;
 use App\Http\Router;
 
@@ -29,6 +30,8 @@ return static function (Router $r): void {
 
     $r->get('/health', [HealthController::class, 'check'], ['public' => true, 'ignore_migrations' => true]);
     $r->get('/sw.js', [PwaController::class, 'serviceWorker'], ['public' => true, 'ignore_migrations' => true]);
+    // Files of user themes from data/themes/ (see Themes::path() for what is served).
+    $r->get('/themes/{slug:[a-z0-9-]+}/{file:[a-z0-9][a-z0-9/_.-]*}', [ThemeController::class, 'asset'], ['public' => true, 'ignore_migrations' => true]);
 
     $r->get('/login', [AuthController::class, 'form'], ['public' => true]);
     $r->post('/login', [AuthController::class, 'login'], ['public' => true]);

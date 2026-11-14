@@ -40,6 +40,7 @@ Live unter `https://checkin.gigold.me`.
 - [Ansichten und URLs](#ansichten-und-urls)
 - [API](#api)
 - [Swarm-Import und Export](#swarm-import-und-export)
+- [Eigene Designs](#eigene-designs)
 - [PWA (Homescreen)](#pwa-homescreen)
 - [Deployment und Updates](#deployment-und-updates)
 - [Migrationen](#migrationen)
@@ -71,7 +72,7 @@ src/           App-Code im Namespace App\ (eigener PSR-4-Autoloader in src/boots
   routes.php   alle Routen an einem Ort
 templates/     PHP-Templates (Ausgabe immer über e())
 config/        config.example.php; die echte config.php wird beim Setup erzeugt (gitignored)
-data/          SQLite-DB, Backups, Sessions, Logs (gitignored, per .htaccess gesperrt)
+data/          SQLite-DB, Backups, Sessions, Logs, eigene Designs in themes/ (gitignored, per .htaccess gesperrt)
 migrations/    nummerierte Migrationen 001_….php
 bin/           CLI-Skripte (setup, migrate, import-swarm) für die lokale Nutzung
 tests/         PHPUnit
@@ -321,6 +322,34 @@ Unter *Einstellungen → Import & Export* (nur eingeloggt):
 
 - `/export.json`: alle Check-ins mit allen Feldern, älteste zuerst
 - `/export.geojson`: GeoJSON-FeatureCollection (RFC 7946, Koordinaten als `[lon, lat]`), direkt nutzbar in QGIS, uMap, geojson.io usw.
+
+## Eigene Designs
+
+Ein Design ist reines CSS. Es liegt als Ordner in `data/themes/<name>/`, also dort, wo auch Datenbank und Backups liegen. Updates und Deployments fassen `data/` nie an, ein eigenes Design überlebt damit jedes Release.
+
+```
+data/themes/nachtschwarm/
+  theme.css     Pflicht, wird nach dem Standard-CSS geladen
+  map.css       optional, nur auf Seiten mit Karte
+  fonts/        optional, Schriften als .woff2
+```
+
+`theme.css` beginnt mit einem Kommentar, aus dem die Einstellungen Name, Autor und Version lesen:
+
+```css
+/*
+ * Name: Nachtschwarm
+ * Author: Dein Name
+ * Version: 1.0
+ * sv-theme-api: 1
+ */
+```
+
+Ausgewählt wird das Design in den Einstellungen unter *Darstellung*. Passt `sv-theme-api` nicht zur App, bleibt das Design nutzbar, die Einstellungen zeigen aber einen Hinweis.
+
+**Auslieferung:** `data/` bleibt gesperrt. Die Dateien liefert die Route `/themes/<name>/<datei>` aus, auch ohne Login, weil die Login-Seite das Design ebenfalls braucht. Sie liefert nur `.css`, `.woff2` und `.png`, nur aus dem jeweiligen Ordner und höchstens eine Ebene tief. Ordnernamen bestehen aus Kleinbuchstaben, Ziffern und `-`. Fremde Server kann ein Design nicht einbinden, die Content Security Policy lässt Stylesheets, Schriften und Bilder nur vom eigenen Server zu (Kartenkacheln ausgenommen).
+
+Welche CSS-Variablen und Klassen ein Design überschreiben kann, steht ab Version 0.9.0 in `docs/THEMING.md`.
 
 ## PWA (Homescreen)
 

@@ -8,6 +8,7 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ## [Unreleased]
 
 ### Hinzugefügt
+- **Eigene Designs:** CSS-Themes in `data/themes/<name>/` (`theme.css`, optional `map.css` und Schriften). Auswahl in den Einstellungen unter *Darstellung*, Auslieferung über die Route `/themes/…`, die nur `.css`, `.woff2` und `.png` aus dem Theme-Ordner liefert. Themes geben im Kopfkommentar `sv-theme-api` an; passt die Version nicht, zeigen die Einstellungen einen Hinweis.
 - **Projekt-Steckbrief** am Anfang der README, mit den begründeten Abweichungen von den Coding-Regeln: Leaflet (`T-4`), Kartenkacheln direkt von OSM (`D-1`), Vendor-Pfade ohne Version (`T-5`, inzwischen behoben).
 - `SECURITY.md`: Sicherheitslücken vertraulich über „Report a vulnerability“ melden (private Meldungen im Repo eingeschaltet).
 - `THIRD-PARTY-LICENSES.md` für Bootstrap, Bootstrap Icons und Leaflet.

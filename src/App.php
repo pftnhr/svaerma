@@ -22,6 +22,7 @@ use App\Service\Auth;
 use App\Service\CheckinService;
 use App\Service\Exporter;
 use App\Service\SwarmImporter;
+use App\Service\Themes;
 use App\Service\UpdateCheck;
 use App\Service\Osm\Geoapify;
 use App\Service\Osm\HttpClient;
@@ -153,6 +154,32 @@ final class App
             return null;
         }
         return new UpdateCheck($this->http(5), new CacheRepository($this->pdo()), self::REPOSITORY, self::VERSION);
+    }
+
+    public function themes(): Themes
+    {
+        return new Themes($this->dataDir() . '/themes');
+    }
+
+    /**
+     * The theme chosen in the settings, with the URLs of its stylesheets.
+     * Null for the default look or when the chosen theme folder is gone.
+     *
+     * @return array{slug: string, css: string, map: ?string}|null
+     */
+    public function activeTheme(): ?array
+    {
+        $slug = (string) $this->settings()->get('theme', '');
+        $themes = $this->themes();
+        if ($slug === '' || $themes->find($slug) === null) {
+            return null;
+        }
+        $url = static fn (string $file): string => "/themes/$slug/$file?v=" . $themes->fileVersion($slug, $file);
+        return [
+            'slug' => $slug,
+            'css' => $url('theme.css'),
+            'map' => $themes->hasFile($slug, 'map.css') ? $url('map.css') : null,
+        ];
     }
 
     /** Search radius for nearby places in metres (user setting). */
@@ -375,6 +402,7 @@ final class App
         $this->view()->share('loggedIn', !$route->option('setup') && $this->auth()->check());
         $this->view()->share('publicNav', !$route->option('setup') && $this->publicEnabled());
         $this->view()->share('geoapifyActive', !$route->option('setup') && $this->settings()->get('geoapify_key', '') !== '');
+        $this->view()->share('theme', $route->option('setup') ? null : $this->activeTheme());
         $this->view()->share('overpassChActive', !$route->option('setup') && $this->settings()->get('overpass_ch_key', '') !== '');
 
         [$class, $method] = $route->handler;

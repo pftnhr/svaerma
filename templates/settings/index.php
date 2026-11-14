@@ -21,6 +21,9 @@
 /** @var string $baseUrl */
 /** @var string $uploadLimit */
 /** @var bool $importReady */
+/** @var array<string, array{slug: string, name: string, author: string, version: string, api: ?int, compatible: bool}> $themes */
+/** @var string $themeSlug */
+/** @var int $themeApi */
 $title = 'Einstellungen';
 $kb = static fn (int $bytes): string => number_format($bytes / 1024, 0, ',', '.') . ' KB';
 ?>
@@ -126,6 +129,30 @@ $kb = static fn (int $bytes): string => number_format($bytes / 1024, 0, ',', '.'
                     <label class="form-check-label" for="geoapify_remove">Key entfernen</label>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 card-title">Darstellung</h2>
+            <label class="form-label" for="theme">Design</label>
+            <select class="form-select mb-1" id="theme" name="theme">
+                <option value="">Standard</option>
+                <?php foreach ($themes as $t): ?>
+                    <option value="<?= e($t['slug']) ?>"<?= $t['slug'] === $themeSlug ? ' selected' : '' ?>>
+                        <?= e($t['name']) ?><?= $t['version'] !== '' ? ' ' . e($t['version']) : '' ?><?= $t['author'] !== '' ? ' · ' . e($t['author']) : '' ?><?= $t['compatible'] ? '' : ' (für eine andere Version)' ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <?php if (isset($themes[$themeSlug]) && !$themes[$themeSlug]['compatible']): ?>
+                <div class="form-text text-warning-emphasis">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Dieses Design ist für Theme-API <?= e($themes[$themeSlug]['api'] ?? '?') ?> geschrieben, svaerma nutzt <?= e($themeApi) ?>. Einzelne Teile können falsch aussehen.
+                </div>
+            <?php endif; ?>
+            <div class="form-text">
+                Eigene Designs liegen als Ordner in <code>data/themes/</code>, jeweils mit einer <code>theme.css</code>. Updates überschreiben sie nie.
+            </div>
         </div>
     </div>
 

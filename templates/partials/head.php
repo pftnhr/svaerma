@@ -1,4 +1,8 @@
-<?php /** @var string|null $title */ ?>
+<?php
+/** @var string|null $title */
+/** @var array{slug: string, css: string, map: ?string}|null $theme */
+$theme ??= null;
+?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
@@ -20,4 +24,10 @@
       integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H">
 <?php endif; ?>
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
+<?php if ($theme !== null): ?>
+<link rel="stylesheet" href="<?= e($theme['css']) ?>">
+<?php if (!empty($leaflet) && $theme['map'] !== null): ?>
+<link rel="stylesheet" href="<?= e($theme['map']) ?>">
+<?php endif; ?>
+<?php endif; ?>
 <script src="<?= e(asset('js/theme.js')) ?>"></script>
