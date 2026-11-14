@@ -17,7 +17,7 @@ Live unter `https://checkin.gigold.me`.
 | **Uploads** | Swarm-Export (JSON) beim Import; wird nur gelesen, nie gespeichert; Höchstgröße `upload_max_filesize` des Servers |
 | **Fremde Dienste** | Server: Overpass (overpass.ch mit Key, overpass-api.de u. a.), Photon, Nominatim, Geoapify (nur mit Key), GitHub-API für den Update-Hinweis · Browser: Kartenkacheln von `tile.openstreetmap.org` (siehe Abweichungen) |
 | **Repo** | öffentlich · Lizenz: Unlicense |
-| **Server** | All-Inkl, `/www/htdocs/gigold/checkin_gigold_me`, `https://checkin.gigold.me`, PHP 8.5 |
+| **Server** | Shared Webspace bei All-Inkl, PHP 8.5 |
 | **Deployment** | rsync über SSH, `main` ist live (siehe [Deployment und Updates](#deployment-und-updates)) |
 | **Cronjobs** | keine |
 | **Coding-Regeln** | Version 1.2.0 |
@@ -348,10 +348,9 @@ Zwei Workflows unter `.github/workflows/`:
 
 | | |
 |---|---|
-| Server | `gigold.kasserver.com` (All-Inkl), Benutzer `ssh-gigold` |
-| Zielpfad | `/www/htdocs/gigold/checkin_gigold_me` |
+| Server | Shared Webspace bei All-Inkl; Host, Benutzer und Zielpfad stehen nur in den Secrets des Environments `production` |
 | Health-Check | `https://checkin.gigold.me/health` |
-| Zugriff | Thomas (KAS, SSH/SFTP); GitHub Actions über einen eigenen Deploy-Schlüssel nur für dieses Projekt |
+| Zugriff | Betreiber (KAS, SSH/SFTP); GitHub Actions über einen eigenen Deploy-Schlüssel nur für dieses Projekt |
 | Rollback | Revert-Pull-Request auf `main`, der wie jede Änderung durch CI und Deploy geht. Für die Datenbank gibt es das Backup, das vor jeder Migration entsteht. |
 
 Die Zugangsdaten liegen im GitHub-Environment `production`: die Secrets `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `SSH_KNOWN_HOSTS` und `DEPLOY_PATH` sowie die Variable `HEALTH_URL`. Der Host-Key des Servers ist hinterlegt, der Workflow verbindet sich nur mit eingeschalteter Host-Prüfung.
