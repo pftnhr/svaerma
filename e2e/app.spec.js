@@ -147,7 +147,7 @@ test('errors from the place services are shown', async ({ page }) => {
   await expect(page.locator('#places-message')).toHaveText('Gerade ist kein Ortsdienst erreichbar. (Overpass: HTTP 504)');
 });
 
-test('manual place uses the current position and no OSM reference', async ({ page }) => {
+test('manual place uses the current position and is remembered as own place', async ({ page }) => {
   await login(page);
   await fakeNearby(page, []);
   await page.goto('/');
@@ -156,11 +156,14 @@ test('manual place uses the current position and no OSM reference', async ({ pag
   await page.getByRole('button', { name: 'Eigener Ort' }).click();
   await page.fill('#manual-name', 'Bei Oma im Garten');
   await page.click('#manual-use');
-  await expect(page.locator('#confirm-meta')).toHaveText('Eigener Ort · aktueller Standort');
+  await expect(page.locator('#confirm-meta')).toHaveText('Neuer eigener Ort · aktueller Standort');
   await expect(page.locator('#checkin-form input[name=osm_type]')).toHaveValue('');
+  await expect(page.locator('#checkin-form input[name=new_place]')).toHaveValue('1');
   await expect(page.locator('#checkin-form input[name=lat]')).toHaveValue('52.5163');
   await page.locator('#checkin-form button[type=submit]').click();
   await expect(page.locator('h1')).toHaveText('Bei Oma im Garten');
+  // Remembered as own place, so the detail page has a visit history.
+  await expect(page.getByText('Dein erster Check-in an diesem Ort.')).toBeVisible();
 });
 
 test.describe('without location permission', () => {

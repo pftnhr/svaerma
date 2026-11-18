@@ -7,8 +7,17 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-18
+
+Eigene Orte mit Historie, besuchte Orte oben in der Umkreisliste.
+
 ### Hinzugefügt
+- **Eigene Orte mit Historie.** „+ Eigener Ort“ merkt sich den Ort jetzt in der neuen Tabelle `own_places` (Migration `005_own_places`), Check-ins verweisen über `venue_ref = 'own:<id>'` darauf. Eigene Orte im Suchradius erscheinen in der Umkreisliste mit der Kategorie „Eigener Ort“, die Detailseite zeigt alle Besuche dort. Wer denselben Namen innerhalb von 100 m noch einmal anlegt, landet beim vorhandenen Ort. Ist kein Ortsdienst erreichbar, zeigt die Liste wenigstens die eigenen Orte.
+- API: `/api/v1/places/nearby` liefert eigene Orte mit `venue_ref`, `POST /api/v1/checkins` nimmt `venue_ref` und `new_place` an, Check-ins enthalten `venue_ref`.
 - `ROADMAP.md` mit den offenen Punkten zur PWA: Manifest-Farben und App-Icon aus dem gewählten Theme, Statusleiste auf iOS.
+
+### Geändert
+- **Umkreisliste:** Orte, an denen du schon eingecheckt hast, stehen oben, danach der Rest. Beide Gruppen sind nach Entfernung sortiert (Web und API).
 
 ## [0.9.0] - 2026-11-14
 
@@ -253,7 +262,8 @@ Sicherheits- und Korrektheitsupdate. Danke an [@5minpause](https://github.com/5m
 - GitHub Action: Lint, PHPUnit und PHPStan, danach Deploy per FTPS bei Push auf `main`.
 - Tests für Migrator, Router und Auth.
 
-[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/tgigold/svaerma/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/tgigold/svaerma/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/tgigold/svaerma/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/tgigold/svaerma/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/tgigold/svaerma/compare/v0.8.2...v0.8.3

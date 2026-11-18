@@ -24,18 +24,55 @@ class PlaceController extends Controller
         }
         $radius = max(Overpass::MIN_RADIUS, min(Overpass::MAX_RADIUS, (int) ($this->request->query['radius'] ?? $this->app->nearbyRadius())));
         try {
-            $result = $this->app->nearbySearch()->find($coords[0], $coords[1], $radius);
+            $result = $this->nearbyWithOwn($coords[0], $coords[1], $radius);
         } catch (OsmException $e) {
             return Response::json([
                 'error' => 'Gerade ist kein Ortsdienst erreichbar. Nutze die Suche oder einen eigenen Ort.',
                 'detail' => $e->getMessage(),
             ], 502);
         }
-        return Response::json([
-            'source' => $result['source'],
-            'notice' => $result['notice'],
-            'places' => $this->withVisits($result['places']),
-        ]);
+        return Response::json($result);
+    }
+
+    /**
+     * Nearby places from the map services plus the user's own places, with visit info.
+     * Places already visited come first, each group sorted by distance. If every map
+     * service fails, the own places alone are returned (if there are any).
+     *
+     * @return array{source: string, notice: ?string, places: list<array<string, mixed>>}
+     * @throws OsmException when the map services fail and there is no own place nearby
+     */
+    protected function nearbyWithOwn(float $lat, float $lon, int $radius): array
+    {
+        $own = $this->app->ownPlaces()->near($lat, $lon, $radius);
+        try {
+            $result = $this->app->nearbySearch()->find($lat, $lon, $radius);
+        } catch (OsmException $e) {
+            if ($own === []) {
+                throw $e;
+            }
+            $result = [
+                'source' => 'own',
+                'places' => [],
+                'notice' => 'Gerade ist kein Ortsdienst erreichbar, die Liste zeigt nur deine eigenen Orte.',
+            ];
+        }
+
+        $places = self::visitedFirst($this->withVisits([...$own, ...$result['places']]));
+        return ['source' => $result['source'], 'notice' => $result['notice'], 'places' => $places];
+    }
+
+    /**
+     * Visited places first, then the rest; each group nearest first (stable otherwise).
+     *
+     * @param list<array<string, mixed>> $places with "visits" and "distance"
+     * @return list<array<string, mixed>>
+     */
+    public static function visitedFirst(array $places): array
+    {
+        usort($places, static fn (array $a, array $b): int => [$a['visits'] === 0, $a['distance'] ?? PHP_INT_MAX]
+            <=> [$b['visits'] === 0, $b['distance'] ?? PHP_INT_MAX]);
+        return $places;
     }
 
     /** @param array<string, string> $params */
@@ -63,7 +100,7 @@ class PlaceController extends Controller
     }
 
     /**
-     * Adds "last visited" info to each place.
+     * Adds "last visited" info to each place (by OSM object, for own places by venue reference).
      *
      * @param list<Place> $places
      * @return list<array<string, mixed>>
@@ -71,17 +108,24 @@ class PlaceController extends Controller
     protected function withVisits(array $places): array
     {
         $refs = [];
+        $venueRefs = [];
         foreach ($places as $p) {
             if ($p->osmType !== null && $p->osmId !== null) {
                 $refs[] = [$p->osmType, $p->osmId];
+            } elseif ($p->venueRef !== null) {
+                $venueRefs[] = $p->venueRef;
             }
         }
-        $visits = $this->app->checkins()->visitsFor($refs);
+        $repo = $this->app->checkins();
+        $visits = $repo->visitsFor($refs);
+        $venueVisits = $repo->visitsForVenues($venueRefs);
         $tz = new \DateTimeZone((string) $this->app->config->get('timezone'));
 
-        return array_map(static function (Place $p) use ($visits, $tz): array {
+        return array_map(static function (Place $p) use ($visits, $venueVisits, $tz): array {
             $data = $p->jsonSerialize();
-            $visit = $visits[$p->osmType . '/' . $p->osmId] ?? null;
+            $visit = $p->osmType !== null
+                ? $visits[$p->osmType . '/' . $p->osmId] ?? null
+                : $venueVisits[(string) $p->venueRef] ?? null;
             $data['visits'] = $visit['count'] ?? 0;
             $data['last_visit'] = $visit !== null
                 ? (new \DateTimeImmutable($visit['last'], new \DateTimeZone('UTC')))->setTimezone($tz)->format('d.m.Y')

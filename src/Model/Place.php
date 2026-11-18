@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Model;
 
 /**
- * A place candidate from OpenStreetMap (nearby query or search).
+ * A place candidate: from OpenStreetMap (nearby query or search) or one of the user's own places.
  */
 final class Place implements \JsonSerializable
 {
@@ -18,12 +18,14 @@ final class Place implements \JsonSerializable
         public readonly ?string $category = null,
         public readonly ?string $address = null,
         public readonly ?float $distance = null,
+        /** "own:<id>" for the user's own places */
+        public readonly ?string $venueRef = null,
     ) {
     }
 
     public function withDistance(float $distance): self
     {
-        return new self($this->name, $this->lat, $this->lon, $this->osmType, $this->osmId, $this->category, $this->address, $distance);
+        return new self($this->name, $this->lat, $this->lon, $this->osmType, $this->osmId, $this->category, $this->address, $distance, $this->venueRef);
     }
 
     /** @return array<string, mixed> */
@@ -38,6 +40,7 @@ final class Place implements \JsonSerializable
             'category' => $this->category,
             'address' => $this->address,
             'distance' => $this->distance !== null ? (int) round($this->distance) : null,
+            'venue_ref' => $this->venueRef,
         ];
     }
 }

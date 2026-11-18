@@ -45,7 +45,7 @@ final class ApiController extends PlaceController
     }
 
     /**
-     * Body (JSON or form): lat, lon, place_name, osm_type, osm_id, note, timezone, checked_in_at.
+     * Body (JSON or form): lat, lon, place_name, osm_type, osm_id, venue_ref ("own:<id>"), new_place, note, timezone, checked_in_at.
      * Alternatively "place": one object from /api/v1/places/nearby (as object or as its JSON text), plus "note".
      *
      * @param array<string, string> $params
@@ -69,6 +69,7 @@ final class ApiController extends PlaceController
                 'place_name' => $place['name'] ?? null,
                 'osm_type' => $place['osm_type'] ?? null,
                 'osm_id' => $place['osm_id'] ?? null,
+                'venue_ref' => $place['venue_ref'] ?? null,
             ];
         }
         unset($input['place']);
@@ -149,12 +150,12 @@ final class ApiController extends PlaceController
         }
         $radius = max(Overpass::MIN_RADIUS, min(Overpass::MAX_RADIUS, (int) ($this->request->query['radius'] ?? $this->app->nearbyRadius())));
         try {
-            $result = $this->app->nearbySearch()->find($coords[0], $coords[1], $radius);
+            $result = $this->nearbyWithOwn($coords[0], $coords[1], $radius);
         } catch (OsmException $e) {
             return Response::json(['error' => 'Gerade ist kein Ortsdienst erreichbar.', 'detail' => $e->getMessage()], 502);
         }
 
-        $places = $this->withVisits($result['places']);
+        $places = $result['places'];
         $choices = [];
         foreach ($places as $i => $place) {
             $label = self::label($place);
@@ -201,6 +202,7 @@ final class ApiController extends PlaceController
             'osm_type' => $c->osmType,
             'osm_id' => $c->osmId,
             'osm_url' => $c->osmUrl(),
+            'venue_ref' => $c->venueRef,
             'checked_in_at' => $c->checkedInAt->format('Y-m-d\TH:i:s\Z'),
             'local_time' => $c->localTime()->format(DATE_ATOM),
             'timezone' => $c->timezone,

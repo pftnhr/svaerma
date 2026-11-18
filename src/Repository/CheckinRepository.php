@@ -89,6 +89,29 @@ final class CheckinRepository
     }
 
     /**
+     * Most recent check-in time (UTC) per venue reference (e.g. "own:3").
+     *
+     * @param list<string> $refs
+     * @return array<string, array{last: string, count: int}> keyed by reference
+     */
+    public function visitsForVenues(array $refs): array
+    {
+        $result = [];
+        foreach (array_chunk(array_values(array_unique($refs)), 500) as $chunk) {
+            $marks = implode(',', array_fill(0, count($chunk), '?'));
+            $stmt = $this->pdo->prepare(
+                "SELECT venue_ref, MAX(checked_in_at) AS last, COUNT(*) AS cnt FROM checkins
+                 WHERE venue_ref IN ($marks) GROUP BY venue_ref"
+            );
+            $stmt->execute($chunk);
+            foreach ($stmt->fetchAll() as $row) {
+                $result[(string) $row['venue_ref']] = ['last' => (string) $row['last'], 'count' => (int) $row['cnt']];
+            }
+        }
+        return $result;
+    }
+
+    /**
      * @return list<Checkin> newest first; with $visibility only what visitors may see
      */
     public function page(int $limit, int $offset, ?Visibility $visibility = null): array

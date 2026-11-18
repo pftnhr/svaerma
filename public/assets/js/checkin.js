@@ -1,4 +1,4 @@
-// Check-in page: geolocation → nearby places (Overpass) / search (Photon/Nominatim) → confirm.
+// Check-in page: geolocation → nearby places (Overpass + own places, visited first) / search (Photon/Nominatim) → confirm.
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Same place, same tilt: -9° to +9° derived from the OSM id (or the name).
   function tilt(p) {
-    var key = (p.osm_type || '') + (p.osm_id || p.name || '');
+    var key = (p.osm_type || '') + (p.osm_id || p.venue_ref || p.name || '');
     var hash = 0;
     for (var i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
     return (Math.abs(hash) % 19) - 9;
@@ -112,9 +112,11 @@ document.addEventListener('DOMContentLoaded', function () {
     form.elements.place_name.value = p.name;
     form.elements.osm_type.value = p.osm_type || '';
     form.elements.osm_id.value = p.osm_id || '';
+    form.elements.venue_ref.value = p.venue_ref || '';
+    form.elements.new_place.value = p.new_place ? '1' : '';
     document.getElementById('confirm-title').textContent = p.name;
     var meta = [p.category, p.address].filter(Boolean).join(' · ');
-    if (!p.osm_type) meta = 'Eigener Ort · aktueller Standort';
+    if (p.new_place) meta = 'Neuer eigener Ort · aktueller Standort';
     document.getElementById('confirm-meta').textContent = meta;
     if (typeof confirmEl.showModal === 'function') {
       if (!confirmEl.open) confirmEl.showModal();
@@ -211,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
       showMessage('Für einen eigenen Ort brauche ich deinen Standort.', 'warning');
       return;
     }
-    choose({ name: name, lat: position.lat, lon: position.lon });
+    choose({ name: name, lat: position.lat, lon: position.lon, new_place: true });
   });
 
   locate();

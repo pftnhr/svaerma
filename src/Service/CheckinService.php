@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Model\Checkin;
 use App\Repository\CheckinRepository;
+use App\Repository\OwnPlaceRepository;
 use App\Service\Osm\Geo;
 
 /**
@@ -23,6 +24,7 @@ final class CheckinService
     public function __construct(
         private CheckinRepository $checkins,
         private string $defaultTimezone,
+        private ?OwnPlaceRepository $ownPlaces = null,
     ) {
     }
 
@@ -142,6 +144,9 @@ final class CheckinService
     }
 
     /**
+     * Besides the fields of validate(): "venue_ref" ("own:<id>", one of the user's own places)
+     * or "new_place" (truthy: remember this place without OSM reference as an own place).
+     *
      * @param array<string, mixed> $input
      * @return Checkin|list<string> the new check-in or validation errors
      */
@@ -151,7 +156,23 @@ final class CheckinService
         if ($result['data'] === null) {
             return $result['errors'];
         }
-        $id = $this->checkins->create($result['data'] + ['source' => $source, 'external_id' => $externalId]);
+        $data = $result['data'];
+
+        $venueRef = null;
+        $rawRef = $input['venue_ref'] ?? null;
+        if ($this->ownPlaces !== null && $data['osm_type'] === null) {
+            if (is_string($rawRef) && trim($rawRef) !== '') {
+                $ownId = OwnPlaceRepository::idFromRef(trim($rawRef));
+                if ($ownId === null || $this->ownPlaces->find($ownId) === null) {
+                    return ['Unbekannter eigener Ort.'];
+                }
+                $venueRef = OwnPlaceRepository::ref($ownId);
+            } elseif (filter_var($input['new_place'] ?? false, FILTER_VALIDATE_BOOL)) {
+                $venueRef = $this->ownPlaces->findOrCreate($data['place_name'], $data['lat'], $data['lon']);
+            }
+        }
+
+        $id = $this->checkins->create($data + ['source' => $source, 'external_id' => $externalId, 'venue_ref' => $venueRef]);
         return $this->checkins->find($id) ?? throw new \RuntimeException('Check-in vanished after insert.');
     }
 

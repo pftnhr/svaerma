@@ -91,6 +91,8 @@ $title = 'Einchecken';
         <input type="hidden" name="place_name">
         <input type="hidden" name="osm_type">
         <input type="hidden" name="osm_id">
+        <input type="hidden" name="venue_ref">
+        <input type="hidden" name="new_place">
         <input type="hidden" name="timezone">
         <label class="sv-visually-hidden" for="note">Notiz</label>
         <textarea class="sv-input" id="note" name="note" rows="2" maxlength="5000" placeholder="Notiz (optional)"></textarea>

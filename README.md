@@ -149,10 +149,10 @@ Alles, was du im Alltag änderst (Suchradius, öffentlicher Modus, Geoapify-Key)
    Ist Overpass nicht erreichbar (auch keiner der weiteren Endpunkte aus Config und Einstellungen), fragt die App **Geoapify** (nur mit API-Key, Places API) und die **Reverse-Suche von Photon** ab und führt beide Listen zusammen. Duplikate werden entfernt: gleiches OSM-Objekt, oder gleicher Name innerhalb von 40 m. Ein Hinweis zeigt an, woher die Liste stammt. Nach einem kompletten Overpass-Ausfall wird Overpass 5 Minuten lang übersprungen.
 3. Ist das GPS ungenauer als der Radius, wird bis zur Messgenauigkeit gesucht, maximal 1000 m. **Umkreis erweitern** verdoppelt den Radius.
 4. Fallback ist die **Namenssuche** über Photon (oder Nominatim), mit deinem Standort als Gewichtung.
-5. Mit **Eigener Ort** checkst du mit freiem Namen an deinem aktuellen Standort ein.
-6. Hast du an einem OSM-Ort schon eingecheckt, zeigt die Liste „zuletzt am …“ und die Anzahl der Besuche. Dafür werden `osm_type` und `osm_id` gespeichert.
+5. Mit **Eigener Ort** checkst du mit freiem Namen an deinem aktuellen Standort ein. Der Ort wird gemerkt (Tabelle `own_places`) und taucht danach in der Umkreisliste auf, wenn du im Suchradius bist. Legst du denselben Namen innerhalb von 100 m noch einmal an, nimmt die App den vorhandenen Ort.
+6. Hast du an einem Ort schon eingecheckt, zeigt die Liste „schon gestempelt“ mit Datum und Anzahl der Besuche, und der Ort steht oben. Dafür werden bei OSM-Orten `osm_type` und `osm_id` gespeichert, bei eigenen Orten `venue_ref` (`own:<id>`).
 
-Gespeichert werden bei OSM-Orten die Koordinaten des Orts, bei eigenen Orten dein Standort. Die Zeit steht in UTC in der Datenbank, die Zeitzone deines Geräts wird mitgespeichert.
+Gespeichert werden die Koordinaten des Orts, beim ersten Check-in an einem neuen eigenen Ort dein Standort. Die Zeit steht in UTC in der Datenbank, die Zeitzone deines Geräts wird mitgespeichert.
 
 **Wenn die Umkreissuche nicht geht:** In den Einstellungen (`/settings`) unter *OpenStreetMap-Dienste* auf **Verbindung testen** klicken. Du siehst dann für jeden Endpunkt „OK“ oder den Fehlergrund, z. B. `HTTP 429` (Rate-Limit), `HTTP 504` (überlastet) oder einen Verbindungsfehler (Hoster blockt ausgehende Verbindungen). Details landen außerdem in `data/logs/error.log`.
 

@@ -17,6 +17,7 @@ use App\Repository\ApiTokenRepository;
 use App\Repository\CacheRepository;
 use App\Repository\CheckinRepository;
 use App\Repository\LoginAttemptRepository;
+use App\Repository\OwnPlaceRepository;
 use App\Repository\SettingsRepository;
 use App\Service\Auth;
 use App\Service\CheckinService;
@@ -39,7 +40,7 @@ use PDO;
 final class App
 {
     public const NAME = 'svaerma';
-    public const VERSION = '0.9.0';
+    public const VERSION = '0.10.0';
     /** GitHub repository: footer link and update check. */
     public const REPOSITORY = 'tgigold/svaerma';
     public const DEFAULT_RADIUS = 150;
@@ -132,9 +133,14 @@ final class App
         return new CheckinRepository($this->pdo());
     }
 
+    public function ownPlaces(): OwnPlaceRepository
+    {
+        return new OwnPlaceRepository($this->pdo());
+    }
+
     public function checkinService(): CheckinService
     {
-        return new CheckinService($this->checkins(), (string) $this->config->get('timezone'));
+        return new CheckinService($this->checkins(), (string) $this->config->get('timezone'), $this->ownPlaces());
     }
 
     public function swarmImporter(): SwarmImporter
